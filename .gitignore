@@ -1,3 +1,8 @@
+# JADE
+MTPs-Main-Container.txt
+APDescription.txt
+
+# Maven
 **/target/
 **/target/**
 .mvn/wrapper/maven-wrapper.jar

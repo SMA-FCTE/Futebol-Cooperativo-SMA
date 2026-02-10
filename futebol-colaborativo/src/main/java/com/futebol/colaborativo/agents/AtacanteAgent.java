@@ -1,3 +1,5 @@
+package com.futebol.colaborativo.agents;
+
 import jade.core.*;
 import jade.core.behaviours.*;
 import jade.lang.acl.ACLMessage;
