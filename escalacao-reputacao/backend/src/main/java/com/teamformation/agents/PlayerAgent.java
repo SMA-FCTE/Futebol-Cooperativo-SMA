@@ -21,8 +21,45 @@ public class PlayerAgent extends Agent {
 
         // Informações iniciais
         attributes = new Hashtable<>();
-        attributes.put("posicao", "Atacante");
-        attributes.put("reputacao", "8.0");
+        
+        // ======================= ALTERAÇÃO 1 =======================
+        // CADASTRO AUTOMÁTICO DE ATRIBUTOS BASEADO NO NOME DO AGENTE
+        String nome = getLocalName().toLowerCase();
+
+        if (nome.contains("goleiro")) {
+            attributes.put("posicao", "Goleiro");
+            attributes.put("reputacao", "8.5");
+
+        } else if (nome.contains("zagueiro1")) {
+            attributes.put("posicao", "Zagueiro");
+            attributes.put("reputacao", "6.0");
+
+        } else if (nome.contains("zagueiro2")) {
+            attributes.put("posicao", "Zagueiro");
+            attributes.put("reputacao", "8.2"); // MAIS ALTO → DEVE GANHAR
+
+        } else if (nome.contains("volante")) {
+            attributes.put("posicao", "Volante");
+            attributes.put("reputacao", "7.1");
+
+        } else if (nome.contains("meia")) {
+            attributes.put("posicao", "Meia");
+            attributes.put("reputacao", "7.8");
+
+        } else if (nome.contains("atacante1")) {
+            attributes.put("posicao", "Atacante");
+            attributes.put("reputacao", "7.0");
+
+        } else if (nome.contains("atacante2")) {
+            attributes.put("posicao", "Atacante");
+            attributes.put("reputacao", "9.1"); // MELHOR ATACANTE
+
+        } else {
+            // VALOR PADRÃO CASO NÃO CAIA EM NENHUM IF
+            attributes.put("posicao", "Atacante");
+            attributes.put("reputacao", "5.0");
+        }
+        // ======================= FIM DA ALTERAÇÃO ==================
 
         // GUI simples do player
         myGui = new PlayerGui(this);

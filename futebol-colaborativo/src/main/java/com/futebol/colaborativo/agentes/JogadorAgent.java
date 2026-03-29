@@ -1,5 +1,6 @@
 package com.futebol.colaborativo.agentes;
 
+import com.futebol.colaborativo.SistemaFutebol;
 import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.model.JogadorEstado;
 import com.futebol.colaborativo.movimento.Movimento;
@@ -11,8 +12,15 @@ import jade.core.behaviours.*;
 public class JogadorAgent extends Agent {
 
     private JogadorEstado estado;
+    private SistemaFutebol sistema;
 
     protected void setup() {
+
+        // receber sistema
+        Object[] args = getArguments();
+        if (args != null && args.length > 0) {
+            sistema = (SistemaFutebol) args[0];
+        }
 
         // Posição inicial
         estado = new JogadorEstado();
@@ -38,6 +46,10 @@ public class JogadorAgent extends Agent {
 
                 // Movimento
                 Movimento.moverGrid(estado, direcao);
+
+                if (sistema != null) {
+                    sistema.atualizarEstado(getLocalName(), estado);
+                }
 
                 // Log terminal
                 System.out.printf(

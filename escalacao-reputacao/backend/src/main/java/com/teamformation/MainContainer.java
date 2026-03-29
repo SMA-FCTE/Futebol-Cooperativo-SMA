@@ -11,20 +11,18 @@ public class MainContainer {
     public static void main(String[] args) {
 
         try {
-            // Inicializa o runtime JADE
             Runtime rt = Runtime.instance();
 
             Profile p = new ProfileImpl();
-            p.setParameter(Profile.GUI, "true"); // habilita a RMA igual ao IntelliJ
+            p.setParameter(Profile.GUI, "true");
 
             AgentContainer container = rt.createMainContainer(p);
 
-            /*
-             * Aqui criamos os agentes já na inicialização,
-             * igual você fazia com:
-             *
-             * -gui coach:examples.TeamFormation.CoachAgent;player1:examples.TeamFormation.PlayerAgent
-             */
+            // ===================================================================
+            // ===================== MUDANÇA 1 ==================================
+            // CRIA APENAS O COACH, MAS AGORA CRIAMOS VÁRIOS JOGADORES FIXOS
+            // USANDO NOMES QUE O PlayerAgent RECONHECE PARA ATRIBUTOS AUTOMÁTICOS
+            // ===================================================================
 
             AgentController coach = container.createNewAgent(
                     "coach",
@@ -33,21 +31,37 @@ public class MainContainer {
             );
             coach.start();
 
-            AgentController player1 = container.createNewAgent(
-                    "player1",
-                    "com.teamformation.agents.PlayerAgent",
-                    null
-            );
-            player1.start();
 
-            AgentController player2 = container.createNewAgent(
-                    "player2",
-                    "com.teamformation.agents.PlayerAgent",
-                    null
-            );
-            player2.start();
+            // ===================== MUDANÇA 2 ================================
+            // JOGADORES PRÉ-CADASTRADOS PARA TESTES SEM GUI
+            // Esses nomes ativam o cadastro automático no PlayerAgent
+            // ================================================================
 
-            System.out.println("MainContainer iniciado com Coach + Players!");
+            String[][] jogadores = {
+                    {"goleiro",    "com.teamformation.agents.PlayerAgent"},
+                    {"zagueiro1",  "com.teamformation.agents.PlayerAgent"},
+                    {"zagueiro2",  "com.teamformation.agents.PlayerAgent"},
+                    {"volante",    "com.teamformation.agents.PlayerAgent"},
+                    {"meia",       "com.teamformation.agents.PlayerAgent"},
+                    {"atacante1",  "com.teamformation.agents.PlayerAgent"},
+                    {"atacante2",  "com.teamformation.agents.PlayerAgent"}
+            };
+
+            // LOOP QUE CRIA TODOS OS JOGADORES
+            for (String[] info : jogadores) {
+                AgentController ag = container.createNewAgent(
+                        info[0],   // nome do agente
+                        info[1],   // classe PlayerAgent
+                        null
+                );
+                ag.start();
+            }
+
+            // ===================================================================
+            // ===================== FIM DAS MUDANÇAS =============================
+            // ===================================================================
+
+            System.out.println("\nMainContainer iniciado com Coach + Jogadores!\n");
 
         } catch (Exception e) {
             e.printStackTrace();
