@@ -20,7 +20,6 @@ const connectionLabels: Record<ConnectionStatus, string> = {
 
 function Scoreboard({
   connectionStatus,
-  tempo,
   playerCount,
   ball,
   ballCarrierId,
@@ -58,10 +57,6 @@ function Scoreboard({
 
       <div className="meta-strip">
         <div className="metric-card">
-          <span className="metric-label">Tempo</span>
-          <strong className="metric-value">{formatTempo(tempo)}</strong>
-        </div>
-        <div className="metric-card">
           <span className="metric-label">Jogadores</span>
           <strong className="metric-value">{playerCount}</strong>
         </div>
@@ -72,18 +67,6 @@ function Scoreboard({
       </div>
     </section>
   )
-}
-
-function formatTempo(tempo: number | null): string {
-  if (tempo === null) {
-    return 'Aguardando'
-  }
-
-  const totalSeconds = Math.max(0, Math.floor(tempo))
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
-  const seconds = String(totalSeconds % 60).padStart(2, '0')
-
-  return `${minutes}:${seconds}`
 }
 
 function formatBallPosition(ball: BallState | null): string {

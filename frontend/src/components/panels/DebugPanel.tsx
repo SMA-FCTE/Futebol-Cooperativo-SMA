@@ -35,7 +35,7 @@ function DebugPanel({
       <div className="panel-heading">
         <div>
           <span className="panel-kicker">Diagnostico</span>
-          <h2>Payloads, posse e bootstrap HTTP</h2>
+          <h2>Diagnóstico de payload</h2>
         </div>
       </div>
 
@@ -43,11 +43,11 @@ function DebugPanel({
         <h3>Resumo da sessao</h3>
         <ul className="debug-list">
           <li>
-            <span>Status WS</span>
+            <span>Status da conexão WS</span>
             <strong>{connectionStatus}</strong>
           </li>
           <li>
-            <span>Formato detectado</span>
+            <span>Formato do payload detectado</span>
             <strong>{gameState.meta.payloadFormat}</strong>
           </li>
           <li>
@@ -88,7 +88,7 @@ function DebugPanel({
       </div>
 
       <div className="debug-block">
-        <h3>Bootstrap HTTP</h3>
+        <h3>Inicialização por HTTP</h3>
         <ul className="debug-list">
           <li>
             <span>/api/status</span>

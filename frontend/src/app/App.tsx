@@ -77,10 +77,9 @@ function App() {
       <header className="app-header">
         <div className="hero-copy">
           <p className="eyebrow">Futebol Cooperativo SMA</p>
-          <h1>Estado unico para o jogo, camadas claras para evoluir sem acoplamento.</h1>
+          <h1>Simulação da partida.</h1>
           <p className="lede">
-            React organiza a aplicacao, o WebSocket sincroniza snapshots autoritativos e o
-            PixiJS fica isolado para desenhar o campo em tempo real.
+            Exibição do campo, dos jogadores e da bola durante a execução do jogo.
           </p>
         </div>
 
@@ -93,20 +92,9 @@ function App() {
         <section className="panel viewport-panel">
           <div className="panel-heading">
             <div>
-              <span className="panel-kicker">Renderer Pixi</span>
-              <h2>Campo sincronizado pelo modelo interno</h2>
+              <span className="panel-kicker">Visualização</span>
+              <h2>Campo da partida</h2>
             </div>
-
-            <dl className="quick-stats">
-              <div>
-                <dt>Formato</dt>
-                <dd>{gameState.meta.payloadFormat}</dd>
-              </div>
-              <div>
-                <dt>Posse</dt>
-                <dd>{ballCarrier?.id ?? 'Nenhuma'}</dd>
-              </div>
-            </dl>
           </div>
 
           <GameViewport state={gameState} />

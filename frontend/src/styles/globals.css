@@ -103,9 +103,10 @@ h2 {
 }
 
 h1 {
-  max-width: 15ch;
+  max-width: none;
   font-size: clamp(2.8rem, 5vw, 4.9rem);
   line-height: 0.96;
+  white-space: nowrap;
 }
 
 h2 {
