@@ -1,5 +1,6 @@
 package com.futebol.colaborativo.movimento;
 
+import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.model.JogadorEstado;
 
 public class Movimento {
@@ -24,6 +25,13 @@ public class Movimento {
                 estado.x -= 1;
                 break;
         }
+    }
+
+    public static void conduzirBola(JogadorEstado estado, String direcao) {
+        moverGrid(estado, direcao);
+
+        Ambiente.bola.x = estado.x;
+        Ambiente.bola.y = estado.y;
     }
 
 }

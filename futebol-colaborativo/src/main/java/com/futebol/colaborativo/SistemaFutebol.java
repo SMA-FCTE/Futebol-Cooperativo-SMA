@@ -8,8 +8,8 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
-
 import com.futebol.colaborativo.model.JogadorEstado;
+import com.futebol.colaborativo.model.Ambiente;
 
 public class SistemaFutebol {
 
@@ -46,24 +46,22 @@ public class SistemaFutebol {
         }
     }
 
-    // Atualizado pelos agentes
     public void atualizarEstado(String nome, JogadorEstado estado) {
         estados.put(nome, estado);
 
-        // enviar via websocket
-        String json = gson.toJson(estados);
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("jogadores", estados);
+        resposta.put("bola", Ambiente.bola);
+
+        String json = gson.toJson(resposta);
         EventSocket.broadcastMessage(json);
     }
 
-    // Endpoint: /api/jogadores
     public Map<String, JogadorEstado> getEstados() {
         return estados;
     }
 
-    // Endpoint: /api/status
     public String getStatus() {
         return "Sistema rodando com " + jogadores.size() + " jogadores";
     }
-
-    
 }

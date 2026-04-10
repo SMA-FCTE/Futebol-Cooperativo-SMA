@@ -5,4 +5,6 @@ public class JogadorEstado {
     public double y;
 
     public double velocidade = 1.0;
+
+    public boolean comBola = false;
 }
