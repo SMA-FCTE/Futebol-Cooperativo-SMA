@@ -4,6 +4,7 @@ import GameViewport from '../components/game/GameViewport'
 import DebugPanel from '../components/panels/DebugPanel'
 import Scoreboard from '../components/panels/Scoreboard'
 import { env } from '../config/env'
+import { findBallCarrier } from '../game/model/gameState'
 import { useGameWebSocket } from '../hooks/useGameWebSocket'
 import { gameApi, type BackendPlayersResponse } from '../services/api/gameApi'
 
@@ -22,6 +23,7 @@ const initialHttpState: HttpBootstrapState = {
 function App() {
   const { gameState, connectionStatus, lastRawMessage, events } = useGameWebSocket(env.wsUrl)
   const [httpState, setHttpState] = useState(initialHttpState)
+  const ballCarrier = findBallCarrier(gameState.players)
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -75,9 +77,9 @@ function App() {
       <header className="app-header">
         <div className="hero-copy">
           <p className="eyebrow">Futebol Cooperativo SMA</p>
-          <h1>Estado único para o jogo, camadas claras para evoluir sem acoplamento.</h1>
+          <h1>Estado unico para o jogo, camadas claras para evoluir sem acoplamento.</h1>
           <p className="lede">
-            React organiza a aplicação, o WebSocket sincroniza snapshots autoritativos e o
+            React organiza a aplicacao, o WebSocket sincroniza snapshots autoritativos e o
             PixiJS fica isolado para desenhar o campo em tempo real.
           </p>
         </div>
@@ -101,8 +103,8 @@ function App() {
                 <dd>{gameState.meta.payloadFormat}</dd>
               </div>
               <div>
-                <dt>Jogadores</dt>
-                <dd>{gameState.players.length}</dd>
+                <dt>Posse</dt>
+                <dd>{ballCarrier?.id ?? 'Nenhuma'}</dd>
               </div>
             </dl>
           </div>
@@ -113,9 +115,10 @@ function App() {
         <aside className="sidebar">
           <Scoreboard
             connectionStatus={connectionStatus}
-            scoreboard={gameState.scoreboard}
             tempo={gameState.tempo}
             playerCount={gameState.players.length}
+            ball={gameState.ball}
+            ballCarrierId={ballCarrier?.id ?? null}
           />
           <DebugPanel
             connectionStatus={connectionStatus}

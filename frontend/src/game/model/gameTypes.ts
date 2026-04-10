@@ -1,6 +1,6 @@
 export type TeamId = 'A' | 'B' | 'unknown'
 
-export type PayloadFormat = 'legacy' | 'snapshot'
+export type PayloadFormat = 'legacy-flat' | 'legacy-nested' | 'snapshot'
 
 export type FieldState = {
   width: number
@@ -14,6 +14,7 @@ export type PlayerState = {
   y: number
   velocidade: number
   theta: number
+  comBola: boolean
 }
 
 export type BallState = {
@@ -44,9 +45,17 @@ export type LegacyPlayerPayload = {
   y?: unknown
   velocidade?: unknown
   theta?: unknown
+  comBola?: unknown
 }
 
-export type LegacyPayload = Record<string, LegacyPlayerPayload>
+export type LegacyFlatPayload = Record<string, LegacyPlayerPayload>
+
+export type LegacyNestedPlayersPayload = Record<string, LegacyPlayerPayload>
+
+export type LegacyNestedPayload = {
+  jogadores?: LegacyNestedPlayersPayload
+  bola?: SnapshotBallPayload | null
+}
 
 export type SnapshotPlayerPayload = {
   id?: unknown
@@ -55,6 +64,7 @@ export type SnapshotPlayerPayload = {
   y?: unknown
   velocidade?: unknown
   theta?: unknown
+  comBola?: unknown
 }
 
 export type SnapshotBallPayload = {

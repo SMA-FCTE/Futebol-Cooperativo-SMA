@@ -68,11 +68,19 @@ export class PlayerLayer {
     const position = mapFieldPoint(player.x, player.y, viewport)
 
     node.container.position.set(position.x, position.y)
-    node.label.text = player.id
+    node.label.text = player.comBola ? `${player.id} *` : player.id
     node.label.position.set(0, radius + 4)
     node.label.visible = viewport.scale >= 5.25
 
     node.body.clear()
+
+    if (player.comBola) {
+      node.body.circle(0, 0, radius + 6)
+      node.body.fill({ color: 0xfacc15, alpha: 0.16 })
+      node.body.circle(0, 0, radius + 3)
+      node.body.stroke({ color: 0xfacc15, width: Math.max(2, radius * 0.22) })
+    }
+
     node.body.circle(0, 0, radius)
     node.body.fill({ color: this.getTeamColor(player.team) })
     node.body.circle(0, 0, radius)

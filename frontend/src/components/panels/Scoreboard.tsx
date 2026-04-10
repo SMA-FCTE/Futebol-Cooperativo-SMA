@@ -1,11 +1,12 @@
-import type { Scoreboard as ScoreboardState } from '../../game/model/gameTypes'
+import type { BallState } from '../../game/model/gameTypes'
 import type { ConnectionStatus } from '../../services/websocket/gameSocket'
 
 type ScoreboardProps = {
   connectionStatus: ConnectionStatus
-  scoreboard: ScoreboardState
   tempo: number | null
   playerCount: number
+  ball: BallState | null
+  ballCarrierId: string | null
 }
 
 const connectionLabels: Record<ConnectionStatus, string> = {
@@ -19,16 +20,23 @@ const connectionLabels: Record<ConnectionStatus, string> = {
 
 function Scoreboard({
   connectionStatus,
-  scoreboard,
   tempo,
   playerCount,
+  ball,
+  ballCarrierId,
 }: ScoreboardProps) {
+  const ballStateLabel = ballCarrierId
+    ? 'Em conducao'
+    : ball
+      ? 'Solta no campo'
+      : 'Sem leitura'
+
   return (
     <section className="panel scoreboard-panel">
       <div className="panel-heading">
         <div>
           <span className="panel-kicker">Painel React</span>
-          <h2>Placar e estado de sessão</h2>
+          <h2>Estado da jogada</h2>
         </div>
         <span className={`status-pill is-${connectionStatus}`}>
           {connectionLabels[connectionStatus]}
@@ -37,12 +45,14 @@ function Scoreboard({
 
       <div className="scoreboard-grid">
         <article className="team-card team-a">
-          <span className="team-label">Time A</span>
-          <strong className="score-value">{scoreboard.A}</strong>
+          <span className="team-label">Posse atual</span>
+          <strong className="score-value score-value-compact">
+            {ballCarrierId ?? 'Ninguem'}
+          </strong>
         </article>
         <article className="team-card team-b">
-          <span className="team-label">Time B</span>
-          <strong className="score-value">{scoreboard.B}</strong>
+          <span className="team-label">Estado da bola</span>
+          <strong className="score-value score-value-compact">{ballStateLabel}</strong>
         </article>
       </div>
 
@@ -56,8 +66,8 @@ function Scoreboard({
           <strong className="metric-value">{playerCount}</strong>
         </div>
         <div className="metric-card">
-          <span className="metric-label">Fonte</span>
-          <strong className="metric-value">Servidor</strong>
+          <span className="metric-label">Posicao da bola</span>
+          <strong className="metric-value">{formatBallPosition(ball)}</strong>
         </div>
       </div>
     </section>
@@ -74,6 +84,14 @@ function formatTempo(tempo: number | null): string {
   const seconds = String(totalSeconds % 60).padStart(2, '0')
 
   return `${minutes}:${seconds}`
+}
+
+function formatBallPosition(ball: BallState | null): string {
+  if (!ball) {
+    return 'Sem dado'
+  }
+
+  return `${ball.x}, ${ball.y}`
 }
 
 export default Scoreboard

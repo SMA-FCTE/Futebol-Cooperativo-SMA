@@ -1,9 +1,16 @@
 import { createGameEvent, type GameEvent } from '../events/gameEvents'
-import { createEmptyGameState, DEFAULT_SCOREBOARD, sortPlayers } from './gameState'
+import {
+  createEmptyGameState,
+  DEFAULT_SCOREBOARD,
+  findBallCarrier,
+  sortPlayers,
+} from './gameState'
 import type {
   BallState,
   GameState,
-  LegacyPayload,
+  LegacyFlatPayload,
+  LegacyNestedPayload,
+  PayloadFormat,
   PlayerState,
   SnapshotPayload,
   TeamId,
@@ -28,47 +35,77 @@ export function normalizeGamePayload(raw: unknown): NormalizationResult {
     return createFailure('Payload root precisa ser um objeto JSON.')
   }
 
-  if (looksLikeSnapshot(raw)) {
-    return normalizeSnapshotPayload(raw)
+  const payloadFormat = detectPayloadFormat(raw)
+  switch (payloadFormat) {
+    case 'legacy-nested':
+      return normalizeLegacyNestedPayload(raw)
+    case 'snapshot':
+      return normalizeSnapshotPayload(raw)
+    default:
+      return normalizeLegacyFlatPayload(raw)
   }
-
-  return normalizeLegacyPayload(raw)
 }
 
-export function normalizeLegacyPayload(raw: unknown): NormalizationResult {
+export function normalizeLegacyFlatPayload(raw: unknown): NormalizationResult {
   if (!isRecord(raw)) {
-    return createFailure('Payload legado inválido.')
+    return createFailure('Payload legado plano invalido.')
   }
 
-  const players = Object.entries(raw as LegacyPayload).flatMap(([id, value]) => {
+  const players = Object.entries(raw as LegacyFlatPayload).flatMap(([id, value]) => {
+    if (id === 'bola' || id === 'jogadores') {
+      return []
+    }
+
     const player = normalizeLegacyPlayer(id, value)
     return player ? [player] : []
   })
 
   if (players.length === 0) {
-    return createFailure('Payload legado sem jogadores válidos.')
+    return createFailure('Payload legado plano sem jogadores validos.')
   }
 
-  const baseState = createEmptyGameState()
-  const updatedAt = Date.now()
+  return createSuccess({
+    payloadFormat: 'legacy-flat',
+    players,
+    ball: null,
+    tempo: null,
+    scoreboard: { ...DEFAULT_SCOREBOARD },
+  })
+}
 
-  return {
-    ok: true,
-    state: {
-      ...baseState,
-      players: sortPlayers(players),
-      meta: {
-        payloadFormat: 'legacy',
-        updatedAt,
-      },
-    },
-    events: [],
+export function normalizeLegacyNestedPayload(raw: unknown): NormalizationResult {
+  if (!isRecord(raw)) {
+    return createFailure('Payload legado aninhado invalido.')
   }
+
+  const payload = raw as LegacyNestedPayload
+  if (!isRecord(payload.jogadores)) {
+    return createFailure('Payload legado aninhado sem mapa de jogadores valido.')
+  }
+
+  const players = Object.entries(payload.jogadores).flatMap(([id, value]) => {
+    const player = normalizeLegacyPlayer(id, value)
+    return player ? [player] : []
+  })
+
+  if (players.length === 0) {
+    return createFailure('Payload legado aninhado sem jogadores validos.')
+  }
+
+  const ball = normalizeBall(payload.bola, inferPossessorId(players))
+
+  return createSuccess({
+    payloadFormat: 'legacy-nested',
+    players,
+    ball,
+    tempo: null,
+    scoreboard: { ...DEFAULT_SCOREBOARD },
+  })
 }
 
 export function normalizeSnapshotPayload(raw: unknown): NormalizationResult {
   if (!isRecord(raw)) {
-    return createFailure('Payload snapshot inválido.')
+    return createFailure('Payload snapshot invalido.')
   }
 
   const payload = raw as SnapshotPayload
@@ -79,24 +116,79 @@ export function normalizeSnapshotPayload(raw: unknown): NormalizationResult {
       })
     : []
 
+  const normalizedBall = normalizeBall(payload.bola, null)
+  const possessorId = normalizedBall?.emPosseDe ?? inferPossessorId(players)
+  const playersWithPossession = players.map((player) =>
+    possessorId && player.id === possessorId ? { ...player, comBola: true } : player,
+  )
+
+  return createSuccess({
+    payloadFormat: 'snapshot',
+    players: playersWithPossession,
+    ball: normalizedBall
+      ? {
+          ...normalizedBall,
+          emPosseDe: possessorId,
+        }
+      : null,
+    tempo: coerceNullableNumber(payload.tempo),
+    scoreboard: normalizeScoreboard(payload.placar),
+  })
+}
+
+function createSuccess({
+  payloadFormat,
+  players,
+  ball,
+  tempo,
+  scoreboard,
+}: {
+  payloadFormat: PayloadFormat
+  players: PlayerState[]
+  ball: BallState | null
+  tempo: number | null
+  scoreboard: { A: number; B: number }
+}): NormalizationSuccess {
   const baseState = createEmptyGameState()
-  const updatedAt = Date.now()
+  const sortedPlayers = sortPlayers(players)
+  const possessorId = ball?.emPosseDe ?? inferPossessorId(sortedPlayers)
+  const normalizedPlayers = sortedPlayers.map((player) => ({
+    ...player,
+    comBola: possessorId ? player.id === possessorId : player.comBola,
+  }))
 
   return {
     ok: true,
     state: {
       ...baseState,
-      players: sortPlayers(players),
-      ball: normalizeBall(payload.bola),
-      tempo: coerceNullableNumber(payload.tempo),
-      scoreboard: normalizeScoreboard(payload.placar),
+      players: normalizedPlayers,
+      ball: ball
+        ? {
+            ...ball,
+            emPosseDe: possessorId,
+          }
+        : null,
+      tempo,
+      scoreboard,
       meta: {
-        payloadFormat: 'snapshot',
-        updatedAt,
+        payloadFormat,
+        updatedAt: Date.now(),
       },
     },
     events: [],
   }
+}
+
+function detectPayloadFormat(raw: Record<string, unknown>): PayloadFormat {
+  if (Array.isArray(raw.jogadores)) {
+    return 'snapshot'
+  }
+
+  if (isRecord(raw.jogadores)) {
+    return 'legacy-nested'
+  }
+
+  return 'legacy-flat'
 }
 
 function normalizeLegacyPlayer(id: string, value: unknown): PlayerState | null {
@@ -118,6 +210,7 @@ function normalizeLegacyPlayer(id: string, value: unknown): PlayerState | null {
     y,
     velocidade: coerceNullableNumber(value.velocidade) ?? 0,
     theta: coerceNullableNumber(value.theta) ?? 0,
+    comBola: typeof value.comBola === 'boolean' ? value.comBola : false,
   }
 }
 
@@ -141,10 +234,11 @@ function normalizeSnapshotPlayer(value: unknown): PlayerState | null {
     y,
     velocidade: coerceNullableNumber(value.velocidade) ?? 0,
     theta: coerceNullableNumber(value.theta) ?? 0,
+    comBola: typeof value.comBola === 'boolean' ? value.comBola : false,
   }
 }
 
-function normalizeBall(value: unknown): BallState | null {
+function normalizeBall(value: unknown, fallbackPossessorId: string | null): BallState | null {
   if (value === null || value === undefined) {
     return null
   }
@@ -163,7 +257,10 @@ function normalizeBall(value: unknown): BallState | null {
   return {
     x,
     y,
-    emPosseDe: typeof value.emPosseDe === 'string' ? value.emPosseDe : null,
+    emPosseDe:
+      typeof value.emPosseDe === 'string' && value.emPosseDe.trim().length > 0
+        ? value.emPosseDe
+        : fallbackPossessorId,
   }
 }
 
@@ -182,8 +279,8 @@ function normalizeTeam(value: unknown): TeamId {
   return value === 'A' || value === 'B' ? value : 'unknown'
 }
 
-function looksLikeSnapshot(raw: Record<string, unknown>): boolean {
-  return ['tempo', 'bola', 'jogadores', 'placar'].some((key) => key in raw)
+function inferPossessorId(players: PlayerState[]): string | null {
+  return findBallCarrier(players)?.id ?? null
 }
 
 function coerceNullableNumber(value: unknown): number | null {

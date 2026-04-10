@@ -4,7 +4,8 @@ export type BackendPlayerState = {
   x: number
   y: number
   velocidade: number
-  theta: number
+  theta?: number
+  comBola?: boolean
 }
 
 export type BackendPlayersResponse = Record<string, BackendPlayerState>

@@ -298,6 +298,12 @@ h3 {
   line-height: 1;
 }
 
+.score-value-compact {
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.15;
+  word-break: break-word;
+}
+
 .meta-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

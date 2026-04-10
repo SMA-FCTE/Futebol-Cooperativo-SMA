@@ -1,9 +1,14 @@
 import { startTransition, useEffect, useRef, useState } from 'react'
 
 import { appendGameEvents, createGameEvent, type GameEvent } from '../game/events/gameEvents'
-import { createEmptyGameState } from '../game/model/gameState'
+import {
+  createEmptyGameState,
+  DEFAULT_PLAYER_ORIGIN,
+  findBallCarrier,
+  isBallAtCenter,
+} from '../game/model/gameState'
 import { normalizeGamePayload } from '../game/model/normalizers'
-import type { GameState, PayloadFormat } from '../game/model/gameTypes'
+import type { GameState, PayloadFormat, PlayerState } from '../game/model/gameTypes'
 import { GameSocket, type ConnectionStatus } from '../services/websocket/gameSocket'
 
 type UseGameWebSocketResult = {
@@ -19,6 +24,7 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
   const [lastRawMessage, setLastRawMessage] = useState<string | null>(null)
   const [events, setEvents] = useState<GameEvent[]>([])
   const lastPayloadFormatRef = useRef<PayloadFormat | null>(null)
+  const lastGameStateRef = useRef<GameState | null>(null)
 
   useEffect(() => {
     let isActive = true
@@ -46,7 +52,7 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
         pushEvents([
           createGameEvent({
             kind: 'socket-open',
-            message: 'Conexão WebSocket estabelecida.',
+            message: 'Conexao WebSocket estabelecida.',
           }),
         ])
       },
@@ -89,7 +95,7 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
           createGameEvent({
             kind: 'socket-error',
             level: 'error',
-            message: 'Erro de comunicação no WebSocket.',
+            message: 'Erro de comunicacao no WebSocket.',
           }),
         ])
       },
@@ -111,7 +117,7 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
             createGameEvent({
               kind: 'payload-error',
               level: 'error',
-              message: 'Mensagem recebida não é um JSON válido.',
+              message: 'Mensagem recebida nao e um JSON valido.',
             }),
           ])
           return
@@ -123,19 +129,28 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
           return
         }
 
+        const previousState = lastGameStateRef.current
+        const nextState = normalized.state
         const nextEvents = [...normalized.events]
-        if (lastPayloadFormatRef.current !== normalized.state.meta.payloadFormat) {
+
+        if (lastPayloadFormatRef.current !== nextState.meta.payloadFormat) {
           nextEvents.push(
             createGameEvent({
               kind: 'payload-format',
-              message: `Payload ${normalized.state.meta.payloadFormat} detectado e normalizado.`,
+              message: `Payload ${nextState.meta.payloadFormat} detectado e normalizado.`,
             }),
           )
-          lastPayloadFormatRef.current = normalized.state.meta.payloadFormat
+          lastPayloadFormatRef.current = nextState.meta.payloadFormat
         }
 
+        if (previousState) {
+          nextEvents.push(...inferCycleEvents(previousState, nextState))
+        }
+
+        lastGameStateRef.current = nextState
+
         startTransition(() => {
-          setGameState(normalized.state)
+          setGameState(nextState)
           setConnectionStatus('connected')
         })
 
@@ -144,6 +159,7 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
     })
 
     lastPayloadFormatRef.current = null
+    lastGameStateRef.current = null
     startTransition(() => {
       setConnectionStatus('connecting')
     })
@@ -168,4 +184,76 @@ export function useGameWebSocket(url: string): UseGameWebSocketResult {
     lastRawMessage,
     events,
   }
+}
+
+function inferCycleEvents(previousState: GameState, nextState: GameState): GameEvent[] {
+  const previousCarrier = findBallCarrier(previousState.players)
+  const nextCarrier = findBallCarrier(nextState.players)
+  const nextEvents: GameEvent[] = []
+
+  if (previousCarrier?.id !== nextCarrier?.id) {
+    if (!previousCarrier && nextCarrier) {
+      nextEvents.push(
+        createGameEvent({
+          kind: 'ball-possession',
+          message: `${nextCarrier.id} pegou a bola.`,
+        }),
+      )
+    } else if (previousCarrier && nextCarrier) {
+      nextEvents.push(
+        createGameEvent({
+          kind: 'ball-possession',
+          level: 'warning',
+          message: `Posse mudou de ${previousCarrier.id} para ${nextCarrier.id}.`,
+        }),
+      )
+    } else if (previousCarrier && !nextCarrier) {
+      nextEvents.push(
+        createGameEvent({
+          kind: 'ball-possession',
+          level: 'warning',
+          message: `A bola ficou sem posse apos sair de ${previousCarrier.id}.`,
+        }),
+      )
+    }
+  }
+
+  if (isLikelyGoalReset(previousState, nextState, previousCarrier, nextCarrier)) {
+    nextEvents.push(
+      createGameEvent({
+        kind: 'goal-reset',
+        level: 'warning',
+        message: 'Reset de jogada detectado: bola voltou ao centro apos uma conducao.',
+      }),
+    )
+  }
+
+  return nextEvents
+}
+
+function isLikelyGoalReset(
+  previousState: GameState,
+  nextState: GameState,
+  previousCarrier: PlayerState | null,
+  nextCarrier: PlayerState | null,
+): boolean {
+  if (!previousCarrier || nextCarrier) {
+    return false
+  }
+
+  if (!isBallAtCenter(nextState)) {
+    return false
+  }
+
+  const resetPlayer = nextState.players.find((player) => player.id === previousCarrier.id)
+  if (!resetPlayer) {
+    return false
+  }
+
+  const returnedToOrigin =
+    resetPlayer.x === DEFAULT_PLAYER_ORIGIN.x && resetPlayer.y === DEFAULT_PLAYER_ORIGIN.y
+
+  const ballWasBeingCarried = previousState.ball?.emPosseDe === previousCarrier.id
+
+  return returnedToOrigin && ballWasBeingCarried
 }

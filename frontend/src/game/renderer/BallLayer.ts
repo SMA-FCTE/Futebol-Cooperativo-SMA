@@ -20,14 +20,17 @@ export class BallLayer {
     const position = mapFieldPoint(ball.x, ball.y, viewport)
 
     graphics.visible = true
+
+    if (ball.emPosseDe) {
+      graphics.circle(position.x, position.y, radius + 7)
+      graphics.fill({ color: 0xfacc15, alpha: 0.14 })
+      graphics.circle(position.x, position.y, radius + 4)
+      graphics.stroke({ color: 0xfacc15, width: 2 })
+    }
+
     graphics.circle(position.x, position.y, radius)
     graphics.fill({ color: 0xf8fafc })
     graphics.circle(position.x, position.y, radius)
     graphics.stroke({ color: 0x0f172a, width: Math.max(1.5, radius * 0.35) })
-
-    if (ball.emPosseDe) {
-      graphics.circle(position.x, position.y, radius + 3)
-      graphics.stroke({ color: 0xfacc15, width: 1.5 })
-    }
   }
 }

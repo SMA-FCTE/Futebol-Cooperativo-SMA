@@ -7,6 +7,8 @@ export type GameEventKind =
   | 'socket-error'
   | 'payload-error'
   | 'payload-format'
+  | 'ball-possession'
+  | 'goal-reset'
 
 export type GameEvent = {
   id: string
