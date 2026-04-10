@@ -47,6 +47,7 @@ public class JogadorAgent extends Agent {
                 // Movimento
                 Movimento.moverGrid(estado, direcao);
 
+                // Atualiza o estado do jogador no sistema
                 if (sistema != null) {
                     sistema.atualizarEstado(getLocalName(), estado);
                 }

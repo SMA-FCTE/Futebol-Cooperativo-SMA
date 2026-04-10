@@ -4,7 +4,7 @@ import com.futebol.colaborativo.model.JogadorEstado;
 
 public class Movimento {
 
-    // Grid (provisório)
+    // Grid computacional (Eixo Y é positivo para baixo e negativo para cima)
     public static void moverGrid(JogadorEstado estado, String direcao) {
 
         switch (direcao) {
@@ -26,9 +26,4 @@ public class Movimento {
         }
     }
 
-    // // Contínuo ( para o futuro)
-    // public static void moverContinuo(JogadorEstado estado) {
-    //     estado.x += estado.velocidade * Math.cos(estado.theta);
-    //     estado.y += estado.velocidade * Math.sin(estado.theta);
-    // }
 }
