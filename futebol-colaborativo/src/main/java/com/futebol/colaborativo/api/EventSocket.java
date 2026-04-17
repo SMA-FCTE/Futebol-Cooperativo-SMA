@@ -45,7 +45,7 @@ public class EventSocket extends WebSocketServer {
         System.out.println("🚀 WebSocket rodando na porta " + getPort());
     }
 
-    public static void broadcastMessage(String message) {
+    public static void enviarMensagemParaClientes(String message) {
         synchronized (connections) {
             for (WebSocket conn : connections) {
                 conn.send(message);

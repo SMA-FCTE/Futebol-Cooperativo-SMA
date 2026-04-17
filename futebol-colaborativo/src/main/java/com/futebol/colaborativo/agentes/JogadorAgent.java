@@ -12,20 +12,26 @@ public class JogadorAgent extends Agent {
 
     private JogadorEstado estado;
     private SistemaFutebol sistema;
+    private double xInicial;
+    private double yInicial;
+    private double golX;
 
     @Override
     protected void setup() {
 
         Object[] args = getArguments();
-        if (args != null && args.length > 0) {
+        if (args != null && args.length >= 4) {
             sistema = (SistemaFutebol) args[0];
+            xInicial = ((Number) args[1]).doubleValue();
+            yInicial = ((Number) args[2]).doubleValue();
+            golX = ((Number) args[3]).doubleValue();
         }
 
         estado = new JogadorEstado();
-        estado.x = 10;
-        estado.y = 10;
+        estado.x = xInicial;
+        estado.y = yInicial;
 
-        addBehaviour(new TickerBehaviour(this, 500) {
+        addBehaviour(new TickerBehaviour(this, 250) {
 
             @Override
             protected void onTick() {
@@ -63,21 +69,11 @@ public class JogadorAgent extends Agent {
     }
 
     private void conduzirAteOGol() {
-        String direcao = calcularDirecao(Ambiente.golX, Ambiente.golY);
+        String direcao = calcularDirecao(golX, Ambiente.golY);
         Movimento.conduzirBola(estado, direcao);
 
         if (chegouNoGol()) {
-            System.out.println(getLocalName() + " marcou um gol!");
-
-            estado.comBola = false;
-
-            // reposiciona bola no centro
-            Ambiente.bola.x = Ambiente.largura / 2;
-            Ambiente.bola.y = Ambiente.altura / 2;
-
-            // reposiciona jogador
-            estado.x = 10;
-            estado.y = 10;
+            sistema.registrarGol(getLocalName());
         }
     }
 
@@ -86,7 +82,7 @@ public class JogadorAgent extends Agent {
     }
 
     private boolean chegouNoGol() {
-        return estado.x == Ambiente.golX && estado.y == Ambiente.golY;
+        return estado.x == golX && estado.y == Ambiente.golY;
     }
 
     private String calcularDirecao(double alvoX, double alvoY) {
