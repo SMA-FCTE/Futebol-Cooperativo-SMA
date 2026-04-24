@@ -7,4 +7,5 @@ public class JogadorEstado {
     public double velocidade = 1.0;
 
     public boolean comBola = false;
+    public double golX;
 }

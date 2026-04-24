@@ -15,6 +15,9 @@ public class JogadorAgent extends Agent {
     private double xInicial;
     private double yInicial;
     private double golX;
+    private double alvoInterceptacaoX;
+    private double alvoInterceptacaoY;
+    private boolean temAlvoInterceptacao = false;
 
     @Override
     protected void setup() {
@@ -30,16 +33,40 @@ public class JogadorAgent extends Agent {
         estado = new JogadorEstado();
         estado.x = xInicial;
         estado.y = yInicial;
+        estado.golX = golX;
 
         addBehaviour(new TickerBehaviour(this, 250) {
 
             @Override
             protected void onTick() {
 
-                if (!estado.comBola) {
+                JogadorEstado algumJogadorComBola = sistema.getJogadorComBola();
+
+                if (algumJogadorComBola == null) {
+                    temAlvoInterceptacao = false;
                     perseguirBola();
-                } else {
+
+                } else if (estado.comBola) {
+                    temAlvoInterceptacao = false;
                     conduzirAteOGol();
+
+                } else {
+
+                    if (!temAlvoInterceptacao) {
+                        double[] ponto = calcularPontoIntercepcao(algumJogadorComBola);
+
+                        alvoInterceptacaoX = ponto[0];
+                        alvoInterceptacaoY = ponto[1];
+
+                        temAlvoInterceptacao = true;
+
+                        System.out.printf(
+                            "[%s] alvo fixado em (%.1f, %.1f)%n",
+                            getLocalName(), alvoInterceptacaoX, alvoInterceptacaoY
+                        );
+                    }
+
+                    irParaPontoInterceptacao();
                 }
 
                 if (sistema != null) {
@@ -69,7 +96,14 @@ public class JogadorAgent extends Agent {
     }
 
     private void conduzirAteOGol() {
+
         String direcao = calcularDirecao(golX, Ambiente.golY);
+
+        // DEBUG DO CAMINHO
+        System.out.println("[" + getLocalName() + "] indo para o gol -> direção: " + direcao +
+            " | atual: (" + estado.x + ", " + estado.y + ")" +
+            " | alvo: (" + golX + ", " + Ambiente.golY + ")");
+
         Movimento.conduzirBola(estado, direcao);
 
         if (chegouNoGol()) {
@@ -94,5 +128,51 @@ public class JogadorAgent extends Agent {
         } else {
             return deltaY > 0 ? "BAIXO" : "CIMA";
         }
+    }
+
+    private double[] calcularPontoIntercepcao(JogadorEstado alvo) {
+
+        double posicaoJogadorSimuladoX = alvo.x;
+        double posicaoJogadorSimuladoY = alvo.y;
+
+        double golAlvoDoJogadorSimulado = alvo.golX;
+
+        int passo = 0;
+
+        while (posicaoJogadorSimuladoX != golAlvoDoJogadorSimulado || posicaoJogadorSimuladoY != Ambiente.golY) {
+
+            double deltaX = golAlvoDoJogadorSimulado - posicaoJogadorSimuladoX;
+            double deltaY = Ambiente.golY - posicaoJogadorSimuladoY;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                posicaoJogadorSimuladoX += Math.signum(deltaX);
+            } else {
+                posicaoJogadorSimuladoY += Math.signum(deltaY);
+            }
+
+            passo++;
+
+            // tempo do vermelho até esse ponto
+            double distVermelho =
+                Math.abs(posicaoJogadorSimuladoX - estado.x) +
+                Math.abs(posicaoJogadorSimuladoY - estado.y);
+
+            // condição de interceptação
+            if (distVermelho <= passo) {
+                return new double[]{ posicaoJogadorSimuladoX, posicaoJogadorSimuladoY };
+            }
+
+            if (passo > 200) break;
+        }
+
+        // fallback: segue direto o alvo
+        return new double[]{ alvo.x, alvo.y };
+    }
+    
+    private void irParaPontoInterceptacao() {
+
+        String direcao = calcularDirecao(alvoInterceptacaoX, alvoInterceptacaoY);
+
+        Movimento.moverGrid(estado, direcao);
     }
 }

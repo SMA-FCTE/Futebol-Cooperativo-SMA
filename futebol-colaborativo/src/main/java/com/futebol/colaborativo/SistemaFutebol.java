@@ -32,7 +32,7 @@ public class SistemaFutebol {
             }
 
             configuracoes.put(nome, new ConfiguracaoJogador(xInicial, yInicial, golX));
-            estados.put(nome, criarEstadoInicial(xInicial, yInicial));
+            estados.put(nome, criarEstadoInicial(xInicial, yInicial, golX));
 
             AgentController agent = container.createNewAgent(
                 nome,
@@ -48,6 +48,15 @@ public class SistemaFutebol {
         } catch (Exception e) {
             return "Erro ao criar jogador";
         }
+    }
+
+    public synchronized JogadorEstado getJogadorComBola() {
+        for (JogadorEstado estado : estados.values()) {
+            if (estado.comBola) {
+                return estado;
+            }
+        }
+        return null;
     }
 
     public synchronized void atualizarEstado(String nome, JogadorEstado estado) {
@@ -83,10 +92,11 @@ public class SistemaFutebol {
         return "Sistema rodando com " + jogadores.size() + " jogadores";
     }
 
-    private JogadorEstado criarEstadoInicial(double xInicial, double yInicial) {
+    private JogadorEstado criarEstadoInicial(double xInicial, double yInicial, double golX) {
         JogadorEstado estado = new JogadorEstado();
         estado.x = xInicial;
         estado.y = yInicial;
+        estado.golX = golX;
         return estado;
     }
 
