@@ -12,8 +12,8 @@ import com.futebol.colaborativo.model.Ambiente;
 public class App {
     private static final double AZUL_X_INICIAL = 50;
     private static final double AZUL_Y_INICIAL = 30;
-    private static final double VERMELHO_X_INICIAL = 5;
-    private static final double VERMELHO_Y_INICIAL = 12;
+    private static final double VERMELHO_X_INICIAL = 20;
+    private static final double VERMELHO_Y_INICIAL = 20;
 
     public static void main(String[] args) {
         try {

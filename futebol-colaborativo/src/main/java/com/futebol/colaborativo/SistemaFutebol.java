@@ -9,6 +9,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
 import com.futebol.colaborativo.model.Ambiente;
+import com.futebol.colaborativo.model.DisputaBolaEstado;
 import com.futebol.colaborativo.model.JogadorEstado;
 
 public class SistemaFutebol {
@@ -18,6 +19,7 @@ public class SistemaFutebol {
     private final Map<String, AgentController> jogadores = new HashMap<>();
     private final Map<String, JogadorEstado> estados = new HashMap<>();
     private final Map<String, ConfiguracaoJogador> configuracoes = new HashMap<>();
+    private DisputaBolaEstado ultimaDisputa = null;
 
     private static final Gson gson = new Gson();
 
@@ -59,6 +61,128 @@ public class SistemaFutebol {
         return null;
     }
 
+    public synchronized OponenteDisputa localizarOponenteProximoParaDisputa(String nome, JogadorEstado estadoAtual) {
+        OponenteDisputa oponenteEncontrado = null;
+
+        for (Map.Entry<String, JogadorEstado> entry : estados.entrySet()) {
+            String nomeOponente = entry.getKey();
+            JogadorEstado estadoOponente = entry.getValue();
+
+            if (nome.equals(nomeOponente) || estadoOponente == null) {
+                continue;
+            }
+
+            if (!estaProximoParaDisputa(estadoAtual, estadoOponente)) {
+                continue;
+            }
+
+            if (oponenteEncontrado == null || nomeOponente.compareTo(oponenteEncontrado.nome) < 0) {
+                oponenteEncontrado = new OponenteDisputa(nomeOponente, estadoOponente.comBola);
+            }
+        }
+
+        return oponenteEncontrado;
+    }
+
+    public synchronized boolean definirPosseBola(String nomeVencedor) {
+        JogadorEstado estadoVencedor = estados.get(nomeVencedor);
+        if (estadoVencedor == null) {
+            return false;
+        }
+
+        for (Map.Entry<String, JogadorEstado> entry : estados.entrySet()) {
+            entry.getValue().comBola = entry.getKey().equals(nomeVencedor);
+        }
+
+        Ambiente.bola.x = estadoVencedor.x;
+        Ambiente.bola.y = estadoVencedor.y;
+        enviarEstadoAtualParaClientes();
+
+        return true;
+    }
+
+    public static boolean estaProximoParaDisputa(JogadorEstado primeiro, JogadorEstado segundo) {
+        if (primeiro == null || segundo == null) {
+            return false;
+        }
+
+        double distanciaManhattan = Math.abs(primeiro.x - segundo.x) + Math.abs(primeiro.y - segundo.y);
+        return distanciaManhattan <= 1.0;
+    }
+
+    public synchronized void registrarInicioDisputa(
+        String id,
+        int rodada,
+        String jogador1,
+        String jogador2
+    ) {
+        ultimaDisputa = new DisputaBolaEstado(
+            id,
+            rodada,
+            jogador1,
+            jogador2,
+            null,
+            null,
+            null,
+            false,
+            "Disputa em andamento entre " + jogador1 + " e " + jogador2
+        );
+
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized void registrarEmpateDisputa(
+        String id,
+        int rodada,
+        String jogador1,
+        String jogador2,
+        String jogada1,
+        String jogada2
+    ) {
+        ultimaDisputa = new DisputaBolaEstado(
+            id,
+            rodada,
+            jogador1,
+            jogador2,
+            jogada1,
+            jogada2,
+            null,
+            true,
+            "Empate: " + jogador1 + " e " + jogador2 + " jogaram " + jogada1
+        );
+
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized void registrarResultadoDisputa(
+        String id,
+        int rodada,
+        String jogador1,
+        String jogador2,
+        String jogada1,
+        String jogada2,
+        String vencedor
+    ) {
+        ultimaDisputa = new DisputaBolaEstado(
+            id,
+            rodada,
+            jogador1,
+            jogador2,
+            jogada1,
+            jogada2,
+            vencedor,
+            false,
+            vencedor + " venceu com " + (vencedor.equals(jogador1) ? jogada1 : jogada2)
+                + " contra " + (vencedor.equals(jogador1) ? jogada2 : jogada1)
+        );
+
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized DisputaBolaEstado getUltimaDisputa() {
+        return ultimaDisputa;
+    }
+
     public synchronized void atualizarEstado(String nome, JogadorEstado estado) {
         estados.put(nome, estado);
         enviarEstadoAtualParaClientes();
@@ -92,6 +216,16 @@ public class SistemaFutebol {
         return "Sistema rodando com " + jogadores.size() + " jogadores";
     }
 
+    public static class OponenteDisputa {
+        public final String nome;
+        public final boolean comBola;
+
+        private OponenteDisputa(String nome, boolean comBola) {
+            this.nome = nome;
+            this.comBola = comBola;
+        }
+    }
+
     private JogadorEstado criarEstadoInicial(double xInicial, double yInicial, double golX) {
         JogadorEstado estado = new JogadorEstado();
         estado.x = xInicial;
@@ -104,6 +238,7 @@ public class SistemaFutebol {
         Map<String, Object> resposta = new HashMap<>();
         resposta.put("jogadores", estados);
         resposta.put("bola", Ambiente.bola);
+        resposta.put("disputa", ultimaDisputa);
 
         String json = gson.toJson(resposta);
         EventSocket.enviarMensagemParaClientes(json);
