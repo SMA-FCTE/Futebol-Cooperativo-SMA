@@ -2,6 +2,7 @@ import { startTransition, useEffect, useState } from 'react'
 
 import GameViewport from '../components/game/GameViewport'
 import DebugPanel from '../components/panels/DebugPanel'
+import MatchStatePanel from '../components/panels/MatchStatePanel'
 import Scoreboard from '../components/panels/Scoreboard'
 import { env } from '../config/env'
 import { findBallCarrier } from '../game/model/gameState'
@@ -98,6 +99,7 @@ function App() {
           </div>
 
           <GameViewport state={gameState} />
+          <MatchStatePanel state={gameState} />
         </section>
 
         <aside className="sidebar">

@@ -20,6 +20,7 @@ export function createEmptyGameState(): GameState {
     field: { ...DEFAULT_FIELD_DIMENSIONS },
     players: [],
     ball: null,
+    disputa: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
     tempo: null,
     meta: {

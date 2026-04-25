@@ -15,6 +15,7 @@ export type PlayerState = {
   velocidade: number
   theta: number
   comBola: boolean
+  golX: number | null
 }
 
 export type BallState = {
@@ -28,10 +29,25 @@ export type Scoreboard = {
   B: number
 }
 
+export type JogadaDisputa = 'PEDRA' | 'PAPEL' | 'TESOURA'
+
+export type DisputaBolaState = {
+  id: string
+  rodada: number
+  jogador1: string
+  jogador2: string
+  jogada1: JogadaDisputa | null
+  jogada2: JogadaDisputa | null
+  vencedor: string | null
+  empate: boolean
+  resultado: string
+}
+
 export type GameState = {
   field: FieldState
   players: PlayerState[]
   ball: BallState | null
+  disputa: DisputaBolaState | null
   scoreboard: Scoreboard
   tempo: number | null
   meta: {
@@ -46,6 +62,7 @@ export type LegacyPlayerPayload = {
   velocidade?: unknown
   theta?: unknown
   comBola?: unknown
+  golX?: unknown
 }
 
 export type LegacyFlatPayload = Record<string, LegacyPlayerPayload>
@@ -55,6 +72,7 @@ export type LegacyNestedPlayersPayload = Record<string, LegacyPlayerPayload>
 export type LegacyNestedPayload = {
   jogadores?: LegacyNestedPlayersPayload
   bola?: SnapshotBallPayload | null
+  disputa?: DisputaBolaPayload | null
 }
 
 export type SnapshotPlayerPayload = {
@@ -65,6 +83,7 @@ export type SnapshotPlayerPayload = {
   velocidade?: unknown
   theta?: unknown
   comBola?: unknown
+  golX?: unknown
 }
 
 export type SnapshotBallPayload = {
@@ -78,9 +97,22 @@ export type SnapshotScoreboardPayload = {
   B?: unknown
 }
 
+export type DisputaBolaPayload = {
+  id?: unknown
+  rodada?: unknown
+  jogador1?: unknown
+  jogador2?: unknown
+  jogada1?: unknown
+  jogada2?: unknown
+  vencedor?: unknown
+  empate?: unknown
+  resultado?: unknown
+}
+
 export type SnapshotPayload = {
   tempo?: unknown
   bola?: SnapshotBallPayload | null
   jogadores?: unknown
   placar?: SnapshotScoreboardPayload
+  disputa?: DisputaBolaPayload | null
 }

@@ -29,6 +29,7 @@ function DebugPanel({
   const recentEvents = [...events].reverse()
   const ballCarrier = findBallCarrier(gameState.players)
   const playersWithBall = gameState.players.filter((player) => player.comBola)
+  const disputa = gameState.disputa
 
   return (
     <section className="panel debug-panel">
@@ -83,6 +84,38 @@ function DebugPanel({
           <li>
             <span>Total de jogadores</span>
             <strong>{gameState.players.length}</strong>
+          </li>
+        </ul>
+      </div>
+
+      <div className="debug-block">
+        <h3>Ultima disputa</h3>
+        <ul className="debug-list">
+          <li>
+            <span>ID</span>
+            <strong>{disputa?.id ?? 'Nenhuma'}</strong>
+          </li>
+          <li>
+            <span>Jogadores</span>
+            <strong>{disputa ? `${disputa.jogador1} x ${disputa.jogador2}` : 'Sem disputa'}</strong>
+          </li>
+          <li>
+            <span>Rodada</span>
+            <strong>{disputa?.rodada ?? '-'}</strong>
+          </li>
+          <li>
+            <span>Jogadas</span>
+            <strong>
+              {disputa ? `${disputa.jogada1 ?? '?'} x ${disputa.jogada2 ?? '?'}` : 'Sem jogadas'}
+            </strong>
+          </li>
+          <li>
+            <span>Vencedor</span>
+            <strong>{disputa?.vencedor ?? (disputa?.empate ? 'Empate' : 'Indefinido')}</strong>
+          </li>
+          <li>
+            <span>Resultado</span>
+            <strong>{disputa?.resultado ?? 'Aguardando disputa'}</strong>
           </li>
         </ul>
       </div>

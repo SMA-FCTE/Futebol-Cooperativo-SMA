@@ -7,7 +7,9 @@ import {
 } from './gameState'
 import type {
   BallState,
+  DisputaBolaState,
   GameState,
+  JogadaDisputa,
   LegacyFlatPayload,
   LegacyNestedPayload,
   PayloadFormat,
@@ -52,7 +54,7 @@ export function normalizeLegacyFlatPayload(raw: unknown): NormalizationResult {
   }
 
   const players = Object.entries(raw as LegacyFlatPayload).flatMap(([id, value]) => {
-    if (id === 'bola' || id === 'jogadores') {
+    if (id === 'bola' || id === 'jogadores' || id === 'disputa') {
       return []
     }
 
@@ -68,6 +70,7 @@ export function normalizeLegacyFlatPayload(raw: unknown): NormalizationResult {
     payloadFormat: 'legacy-flat',
     players,
     ball: null,
+    disputa: normalizeDisputa((raw as { disputa?: unknown }).disputa),
     tempo: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
   })
@@ -93,11 +96,13 @@ export function normalizeLegacyNestedPayload(raw: unknown): NormalizationResult 
   }
 
   const ball = normalizeBall(payload.bola, inferPossessorId(players))
+  const disputa = normalizeDisputa(payload.disputa)
 
   return createSuccess({
     payloadFormat: 'legacy-nested',
     players,
     ball,
+    disputa,
     tempo: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
   })
@@ -131,6 +136,7 @@ export function normalizeSnapshotPayload(raw: unknown): NormalizationResult {
           emPosseDe: possessorId,
         }
       : null,
+    disputa: normalizeDisputa(payload.disputa),
     tempo: coerceNullableNumber(payload.tempo),
     scoreboard: normalizeScoreboard(payload.placar),
   })
@@ -140,12 +146,14 @@ function createSuccess({
   payloadFormat,
   players,
   ball,
+  disputa,
   tempo,
   scoreboard,
 }: {
   payloadFormat: PayloadFormat
   players: PlayerState[]
   ball: BallState | null
+  disputa: DisputaBolaState | null
   tempo: number | null
   scoreboard: { A: number; B: number }
 }): NormalizationSuccess {
@@ -168,6 +176,7 @@ function createSuccess({
             emPosseDe: possessorId,
           }
         : null,
+      disputa,
       tempo,
       scoreboard,
       meta: {
@@ -211,6 +220,7 @@ function normalizeLegacyPlayer(id: string, value: unknown): PlayerState | null {
     velocidade: coerceNullableNumber(value.velocidade) ?? 0,
     theta: coerceNullableNumber(value.theta) ?? 0,
     comBola: typeof value.comBola === 'boolean' ? value.comBola : false,
+    golX: coerceNullableNumber(value.golX),
   }
 }
 
@@ -235,6 +245,7 @@ function normalizeSnapshotPlayer(value: unknown): PlayerState | null {
     velocidade: coerceNullableNumber(value.velocidade) ?? 0,
     theta: coerceNullableNumber(value.theta) ?? 0,
     comBola: typeof value.comBola === 'boolean' ? value.comBola : false,
+    golX: coerceNullableNumber(value.golX),
   }
 }
 
@@ -264,6 +275,41 @@ function normalizeBall(value: unknown, fallbackPossessorId: string | null): Ball
   }
 }
 
+function normalizeDisputa(value: unknown): DisputaBolaState | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const id = coerceNonEmptyString(value.id)
+  const rodada = coerceNullableNumber(value.rodada)
+  const jogador1 = coerceNonEmptyString(value.jogador1)
+  const jogador2 = coerceNonEmptyString(value.jogador2)
+
+  if (!id || rodada === null || !jogador1 || !jogador2) {
+    return null
+  }
+
+  return {
+    id,
+    rodada,
+    jogador1,
+    jogador2,
+    jogada1: normalizeJogadaDisputa(value.jogada1),
+    jogada2: normalizeJogadaDisputa(value.jogada2),
+    vencedor: coerceNonEmptyString(value.vencedor),
+    empate: typeof value.empate === 'boolean' ? value.empate : false,
+    resultado: coerceNonEmptyString(value.resultado) ?? 'Disputa em andamento',
+  }
+}
+
+function normalizeJogadaDisputa(value: unknown): JogadaDisputa | null {
+  return value === 'PEDRA' || value === 'PAPEL' || value === 'TESOURA' ? value : null
+}
+
 function normalizeScoreboard(value: unknown) {
   if (!isRecord(value)) {
     return { ...DEFAULT_SCOREBOARD }
@@ -285,6 +331,10 @@ function inferPossessorId(players: PlayerState[]): string | null {
 
 function coerceNullableNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function coerceNonEmptyString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
 function createFailure(reason: string): NormalizationFailure {
