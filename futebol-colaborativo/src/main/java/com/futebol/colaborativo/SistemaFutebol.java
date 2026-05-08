@@ -9,7 +9,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
 import com.futebol.colaborativo.model.Ambiente;
-import com.futebol.colaborativo.model.DisputaBolaEstado;
+import com.futebol.colaborativo.dto.DisputaBolaEstadoDTO;
 import com.futebol.colaborativo.model.JogadorEstado;
 
 public class SistemaFutebol {
@@ -19,7 +19,7 @@ public class SistemaFutebol {
     private final Map<String, AgentController> jogadores = new HashMap<>();
     private final Map<String, JogadorEstado> estados = new HashMap<>();
     private final Map<String, ConfiguracaoJogador> configuracoes = new HashMap<>();
-    private DisputaBolaEstado ultimaDisputa = null;
+    private DisputaBolaEstadoDTO ultimaDisputa = null;
 
     private static final Gson gson = new Gson();
 
@@ -116,7 +116,7 @@ public class SistemaFutebol {
         String jogador1,
         String jogador2
     ) {
-        ultimaDisputa = new DisputaBolaEstado(
+        ultimaDisputa = new DisputaBolaEstadoDTO(
             id,
             rodada,
             jogador1,
@@ -139,7 +139,7 @@ public class SistemaFutebol {
         String jogada1,
         String jogada2
     ) {
-        ultimaDisputa = new DisputaBolaEstado(
+        ultimaDisputa = new DisputaBolaEstadoDTO(
             id,
             rodada,
             jogador1,
@@ -163,7 +163,7 @@ public class SistemaFutebol {
         String jogada2,
         String vencedor
     ) {
-        ultimaDisputa = new DisputaBolaEstado(
+        ultimaDisputa = new DisputaBolaEstadoDTO(
             id,
             rodada,
             jogador1,
@@ -179,7 +179,7 @@ public class SistemaFutebol {
         enviarEstadoAtualParaClientes();
     }
 
-    public synchronized DisputaBolaEstado getUltimaDisputa() {
+    public synchronized DisputaBolaEstadoDTO getUltimaDisputa() {
         return ultimaDisputa;
     }
 

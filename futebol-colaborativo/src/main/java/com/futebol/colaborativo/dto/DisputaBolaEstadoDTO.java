@@ -1,6 +1,6 @@
-package com.futebol.colaborativo.model;
+package com.futebol.colaborativo.dto;
 
-public class DisputaBolaEstado {
+public class DisputaBolaEstadoDTO {
     public String id;
     public int rodada;
     public String jogador1;
@@ -11,7 +11,7 @@ public class DisputaBolaEstado {
     public boolean empate;
     public String resultado;
 
-    public DisputaBolaEstado(
+    public DisputaBolaEstadoDTO(
         String id,
         int rodada,
         String jogador1,

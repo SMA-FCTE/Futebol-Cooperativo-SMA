@@ -20,26 +20,34 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class JogadorAgent extends Agent {
 
-    static final String CONVERSATION_ID_DISPUTA = "disputa-bola";
-    private static final int TICKS_RECUPERACAO = 4;
-    private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong();
+    static final String CONVERSA_ID_DISPUTA = "disputa-bola";
+    private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 4;
+    private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong(); // Garante que dois agentes não iniciem disputa com o mesmo ID
 
     private JogadorEstado estado;
     private SistemaFutebol sistema;
+
+    // Atributos de posição do agente jogador
     private double xInicial;
     private double yInicial;
+
+    // Atributo da posição do gol
     private double golX;
+
+    // Atributos da posição de interceptação
     private double alvoInterceptacaoX;
     private double alvoInterceptacaoY;
     private boolean temAlvoInterceptacao = false;
     private boolean interceptacaoPossivel = false;
+
+    // Atributos de disputa
     private boolean disputaEmAndamento = false;
     private String disputaId;
     private String oponenteDisputa;
     private int rodadaDisputa;
     private JogadaDisputa jogadaLocalPendente;
-    private int recuperacaoTicksRestantes = 0;
-    private final Random random = new Random();
+    private int ticksPenalidadePerderDisputaRestantes = 0;
+    private final Random random = new Random(); // Para sortear jogadas
 
     @Override
     protected void setup() {
@@ -57,35 +65,37 @@ public class JogadorAgent extends Agent {
         estado.y = yInicial;
         estado.golX = golX;
 
+        // Comportamento para ficar ouvindo eventos/mensagens - representa a “caixa de entrada” do agente
         addBehaviour(new CyclicBehaviour() {
             @Override
             public void action() {
-                MessageTemplate mt = MessageTemplate.MatchConversationId(CONVERSATION_ID_DISPUTA);
-                ACLMessage msg = myAgent.receive(mt);
+                MessageTemplate mensagemTemplate = MessageTemplate.MatchConversationId(CONVERSA_ID_DISPUTA);
+                ACLMessage mensagem = myAgent.receive(mensagemTemplate);
 
-                if (msg == null) {
+                if (mensagem == null) {
                     block();
                     return;
                 }
 
-                processarMensagemDisputa(msg);
+                processarMensagemDisputa(mensagem);
             }
         });
 
+        // Comportamento principal de decisão do agente
         addBehaviour(new TickerBehaviour(this, 50) {
 
             @Override
             protected void onTick() {
 
-                if (recuperacaoTicksRestantes > 0) {
-                    recuperacaoTicksRestantes--;
+                if (ticksPenalidadePerderDisputaRestantes > 0) {
+                    ticksPenalidadePerderDisputaRestantes--;
                     temAlvoInterceptacao = false;
                     atualizarEstadoELogar();
                     return;
                 }
 
                 if (disputaEmAndamento) {
-                    logarEstado();
+                    printTerminalEstado();
                     return;
                 }
 
@@ -127,20 +137,20 @@ public class JogadorAgent extends Agent {
         });
     }
 
-    private void processarMensagemDisputa(ACLMessage msg) {
-        switch (msg.getPerformative()) {
+    private void processarMensagemDisputa(ACLMessage mensagem) {
+        switch (mensagem.getPerformative()) {
             case ACLMessage.CFP:
-                receberCfpDisputa(msg);
+                receberCfpDisputa(mensagem);
                 break;
             case ACLMessage.PROPOSE:
-                receberPropostaDisputa(msg);
+                receberPropostaDisputa(mensagem);
                 break;
             case ACLMessage.ACCEPT_PROPOSAL:
             case ACLMessage.REJECT_PROPOSAL:
-                receberResultadoDisputa(msg);
+                receberResultadoDisputa(mensagem);
                 break;
             case ACLMessage.REFUSE:
-                receberRecusaDisputa(msg);
+                receberRecusaDisputa(mensagem);
                 break;
             default:
                 break;
@@ -192,7 +202,7 @@ public class JogadorAgent extends Agent {
         ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
         cfp.addReceiver(new AID(oponenteDisputa, AID.ISLOCALNAME));
         cfp.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
-        cfp.setConversationId(CONVERSATION_ID_DISPUTA);
+        cfp.setConversationId(CONVERSA_ID_DISPUTA);
         cfp.setReplyWith(disputaId + "-" + rodadaDisputa);
         cfp.setContent(
                 "id=" + disputaId +
@@ -206,14 +216,14 @@ public class JogadorAgent extends Agent {
                 getLocalName(), oponenteDisputa, disputaId, rodadaDisputa, jogadaLocalPendente);
     }
 
-    private void receberCfpDisputa(ACLMessage msg) {
-        Map<String, String> dados = parseConteudo(msg.getContent());
+    private void receberCfpDisputa(ACLMessage mensagem) {
+        Map<String, String> dados = parseConteudo(mensagem.getContent());
         String id = dados.get("id");
         int rodada = parseInt(dados.get("rodada"), 1);
-        String desafiante = msg.getSender().getLocalName();
+        String desafiante = mensagem.getSender().getLocalName();
 
         if (id == null) {
-            responderRecusa(msg, "id-ausente");
+            responderRecusa(mensagem, "id-ausente");
             return;
         }
 
@@ -222,7 +232,7 @@ public class JogadorAgent extends Agent {
                 && desafiante.equals(oponenteDisputa);
 
         if (disputaEmAndamento && !mesmaDisputa) {
-            responderRecusa(msg, "ocupado");
+            responderRecusa(mensagem, "ocupado");
             return;
         }
 
@@ -232,10 +242,10 @@ public class JogadorAgent extends Agent {
         rodadaDisputa = rodada;
         jogadaLocalPendente = sortearJogada();
 
-        ACLMessage proposta = msg.createReply();
+        ACLMessage proposta = mensagem.createReply();
         proposta.setPerformative(ACLMessage.PROPOSE);
         proposta.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
-        proposta.setConversationId(CONVERSATION_ID_DISPUTA);
+        proposta.setConversationId(CONVERSA_ID_DISPUTA);
         proposta.setContent(
                 "id=" + disputaId +
                         ";rodada=" + rodadaDisputa +
@@ -249,8 +259,8 @@ public class JogadorAgent extends Agent {
                 getLocalName(), oponenteDisputa, disputaId, rodadaDisputa, jogadaLocalPendente);
     }
 
-    private void receberPropostaDisputa(ACLMessage msg) {
-        Map<String, String> dados = parseConteudo(msg.getContent());
+    private void receberPropostaDisputa(ACLMessage mensagem) {
+        Map<String, String> dados = parseConteudo(mensagem.getContent());
         String id = dados.get("id");
         int rodada = parseInt(dados.get("rodada"), 1);
 
@@ -258,10 +268,10 @@ public class JogadorAgent extends Agent {
             return;
         }
 
-        String nomeOponente = msg.getSender().getLocalName();
+        String nomeOponente = mensagem.getSender().getLocalName();
         JogadaDisputa jogadaOponente = parseJogada(dados.get("jogada"));
         if (jogadaOponente == null) {
-            responderRecusa(msg, "jogada-invalida");
+            responderRecusa(mensagem, "jogada-invalida");
             limparDisputa();
             return;
         }
@@ -305,7 +315,7 @@ public class JogadorAgent extends Agent {
                     vencedor);
         }
 
-        enviarResultadoDisputa(msg, performative, vencedor, perdedor, jogadaLocalPendente, jogadaOponente);
+        enviarResultadoDisputa(mensagem, performative, vencedor, perdedor, jogadaLocalPendente, jogadaOponente);
         aplicarResultadoDisputa(vencedor, perdedor);
     }
 
@@ -319,7 +329,7 @@ public class JogadorAgent extends Agent {
         ACLMessage resultado = proposta.createReply();
         resultado.setPerformative(performative);
         resultado.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
-        resultado.setConversationId(CONVERSATION_ID_DISPUTA);
+        resultado.setConversationId(CONVERSA_ID_DISPUTA);
         resultado.setContent(
                 "id=" + disputaId +
                         ";rodada=" + rodadaDisputa +
@@ -335,8 +345,8 @@ public class JogadorAgent extends Agent {
                 getLocalName(), vencedor, perdedor, jogadaLocal, jogadaOponente);
     }
 
-    private void receberResultadoDisputa(ACLMessage msg) {
-        Map<String, String> dados = parseConteudo(msg.getContent());
+    private void receberResultadoDisputa(ACLMessage mensagem) {
+        Map<String, String> dados = parseConteudo(mensagem.getContent());
         String id = dados.get("id");
 
         if (!disputaEmAndamento || !disputaId.equals(id)) {
@@ -346,22 +356,22 @@ public class JogadorAgent extends Agent {
         aplicarResultadoDisputa(dados.get("vencedor"), dados.get("perdedor"));
     }
 
-    private void receberRecusaDisputa(ACLMessage msg) {
-        Map<String, String> dados = parseConteudo(msg.getContent());
+    private void receberRecusaDisputa(ACLMessage mensagem) {
+        Map<String, String> dados = parseConteudo(mensagem.getContent());
         String id = dados.get("id");
 
         if (disputaId != null && disputaId.equals(id)) {
-            System.out.printf("[%s] disputa recusada por %s%n", getLocalName(), msg.getSender().getLocalName());
+            System.out.printf("[%s] disputa recusada por %s%n", getLocalName(), mensagem.getSender().getLocalName());
             limparDisputa();
         }
     }
 
-    private void responderRecusa(ACLMessage msg, String motivo) {
-        ACLMessage recusa = msg.createReply();
+    private void responderRecusa(ACLMessage mensagem, String motivo) {
+        ACLMessage recusa = mensagem.createReply();
         recusa.setPerformative(ACLMessage.REFUSE);
         recusa.setProtocol(FIPANames.InteractionProtocol.FIPA_CONTRACT_NET);
-        recusa.setConversationId(CONVERSATION_ID_DISPUTA);
-        recusa.setContent(msg.getContent() + ";motivo=" + motivo);
+        recusa.setConversationId(CONVERSA_ID_DISPUTA);
+        recusa.setContent(mensagem.getContent() + ";motivo=" + motivo);
         send(recusa);
     }
 
@@ -382,7 +392,7 @@ public class JogadorAgent extends Agent {
         } else if (perdeu) {
             estado.comBola = false;
             temAlvoInterceptacao = false;
-            recuperacaoTicksRestantes = TICKS_RECUPERACAO;
+            ticksPenalidadePerderDisputaRestantes = TICKS_PENALIDADE_PERDER_DISPUTA;
         }
 
         limparDisputa();
@@ -443,17 +453,17 @@ public class JogadorAgent extends Agent {
             sistema.atualizarEstado(getLocalName(), estado);
         }
 
-        logarEstado();
+        printTerminalEstado();
     }
 
-    private void logarEstado() {
+    private void printTerminalEstado() {
         System.out.printf(
                 "Agente: %s | Pos: (%.2f, %.2f) | Bola: (%.2f, %.2f) | Com bola: %s | Recuperacao: %d%n",
                 getLocalName(),
                 estado.x, estado.y,
                 Ambiente.bola.x, Ambiente.bola.y,
                 estado.comBola,
-                recuperacaoTicksRestantes);
+                ticksPenalidadePerderDisputaRestantes);
     }
 
     private void perseguirBola() {
