@@ -27,6 +27,7 @@ public class App {
 
             // 2. Criar sistema (orquestrador)
             SistemaFutebol sistema = new SistemaFutebol(mainContainer);
+            sistema.iniciarBola();
 
             // 3. Criar jogadores iniciais
             sistema.criarJogador("azul", AZUL_X_INICIAL, AZUL_Y_INICIAL, 0);

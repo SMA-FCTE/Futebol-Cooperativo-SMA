@@ -21,7 +21,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class JogadorAgent extends Agent {
 
     static final String CONVERSA_ID_DISPUTA = "disputa-bola";
+    private static final boolean USAR_CHUTE_ALEATORIO_TESTE = true;
     private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 4;
+    private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
+    private static final double FORCA_CHUTE = 1.65;
+    private static final double FORCA_CHUTE_ALEATORIO_TESTE = 1.35;
     private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong(); // Garante que dois agentes não iniciem disputa com o mesmo ID
 
     private JogadorEstado estado;
@@ -112,7 +116,11 @@ public class JogadorAgent extends Agent {
 
                 } else if (estado.comBola) {
                     temAlvoInterceptacao = false;
-                    conduzirAteOGol();
+                    if (USAR_CHUTE_ALEATORIO_TESTE) {
+                        chutarAleatorioParaTeste();
+                    } else {
+                        conduzirAteOGol();
+                    }
 
                 } else {
 
@@ -467,30 +475,33 @@ public class JogadorAgent extends Agent {
     }
 
     private void perseguirBola() {
-        String direcao = calcularDirecao(Ambiente.bola.x, Ambiente.bola.y);
-        Movimento.moverGrid(estado, direcao);
+        Movimento.mover(estado, Ambiente.bola.x, Ambiente.bola.y);
 
         if (tocouNaBola()) {
             estado.comBola = true;
             if (sistema != null) {
                 sistema.definirPosseBola(getLocalName());
             } else {
-                Ambiente.bola.x = estado.x;
-                Ambiente.bola.y = estado.y;
+                Ambiente.bola.posicionarComPosse(getLocalName(), estado.x, estado.y);
             }
         }
     }
 
     private void conduzirAteOGol() {
 
-        String direcao = calcularDirecao(golX, Ambiente.golY);
+        double distanciaGol = Movimento.calcularDistancia(estado.x, estado.y, golX, Ambiente.golY);
 
         // DEBUG DO CAMINHO
-        System.out.println("[" + getLocalName() + "] indo para o gol -> direção: " + direcao +
+        System.out.println("[" + getLocalName() + "] indo para o gol" +
                 " | atual: (" + estado.x + ", " + estado.y + ")" +
                 " | alvo: (" + golX + ", " + Ambiente.golY + ")");
 
-        Movimento.conduzirBola(estado, direcao);
+        if (distanciaGol <= DISTANCIA_CHUTE_AO_GOL) {
+            chutarParaOGol();
+            return;
+        }
+
+        Movimento.conduzirBola(estado, getLocalName(), golX, Ambiente.golY);
 
         if (chegouNoGol()) {
             sistema.registrarGol(getLocalName());
@@ -498,22 +509,66 @@ public class JogadorAgent extends Agent {
     }
 
     private boolean tocouNaBola() {
-        return estado.x == Ambiente.bola.x && estado.y == Ambiente.bola.y;
+        return Movimento.estaPerto(
+                estado.x,
+                estado.y,
+                Ambiente.bola.x,
+                Ambiente.bola.y,
+                Movimento.RAIO_CONTATO_BOLA);
     }
 
     private boolean chegouNoGol() {
-        return estado.x == golX && estado.y == Ambiente.golY;
+        return Movimento.estaPerto(estado.x, estado.y, golX, Ambiente.golY, Movimento.RAIO_GOL);
     }
 
-    private String calcularDirecao(double alvoX, double alvoY) {
-        double deltaX = alvoX - estado.x;
-        double deltaY = alvoY - estado.y;
+    private void chutarParaOGol() {
+        double deltaX = golX - estado.x;
+        double deltaY = Ambiente.golY - estado.y;
+        double distancia = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            return deltaX > 0 ? "DIREITA" : "ESQUERDA";
-        } else {
-            return deltaY > 0 ? "BAIXO" : "CIMA";
+        if (distancia == 0) {
+            distancia = 1;
+            deltaX = golX == 0 ? -1 : 1;
+            deltaY = 0;
         }
+
+        double forcaX = (deltaX / distancia) * FORCA_CHUTE;
+        double forcaY = (deltaY / distancia) * FORCA_CHUTE;
+
+        estado.comBola = false;
+
+        ACLMessage chute = new ACLMessage(ACLMessage.INFORM);
+        chute.addReceiver(new AID("bola", AID.ISLOCALNAME));
+        chute.setContent(forcaX + "," + forcaY);
+        send(chute);
+
+        if (sistema != null) {
+            sistema.atualizarEstado(getLocalName(), estado);
+        }
+
+        System.out.printf("[%s] chutou para o gol com forca (%.2f, %.2f)%n", getLocalName(), forcaX, forcaY);
+    }
+
+    private void chutarAleatorioParaTeste() {
+        double forcaX = (random.nextDouble() * 2.0 - 1.0) * FORCA_CHUTE_ALEATORIO_TESTE;
+        double forcaY = (random.nextDouble() * 2.0 - 1.0) * FORCA_CHUTE_ALEATORIO_TESTE;
+
+        if (Math.abs(forcaX) < 0.25 && Math.abs(forcaY) < 0.25) {
+            forcaX = random.nextBoolean() ? FORCA_CHUTE_ALEATORIO_TESTE : -FORCA_CHUTE_ALEATORIO_TESTE;
+        }
+
+        estado.comBola = false;
+
+        ACLMessage chute = new ACLMessage(ACLMessage.INFORM);
+        chute.addReceiver(new AID("bola", AID.ISLOCALNAME));
+        chute.setContent(forcaX + "," + forcaY);
+        send(chute);
+
+        if (sistema != null) {
+            sistema.atualizarEstado(getLocalName(), estado);
+        }
+
+        System.out.printf("[%s] chute aleatorio de teste com forca (%.2f, %.2f)%n", getLocalName(), forcaX, forcaY);
     }
 
     private double getProprioGolX() {
@@ -562,15 +617,11 @@ public class JogadorAgent extends Agent {
 
     private void irParaPontoInterceptacao() {
 
-        String direcao;
-
         if (interceptacaoPossivel) {
-            direcao = calcularDirecao(alvoInterceptacaoX, alvoInterceptacaoY);
+            Movimento.mover(estado, alvoInterceptacaoX, alvoInterceptacaoY);
         } else {
-            direcao = calcularDirecao(getProprioGolX(), Ambiente.golY);
+            Movimento.mover(estado, getProprioGolX(), Ambiente.golY);
         }
-
-        Movimento.moverGrid(estado, direcao);
     }
 
     static ResultadoDisputa compararJogadas(JogadaDisputa local, JogadaDisputa oponente) {
