@@ -56,32 +56,37 @@ public class JogadorAgent extends Agent {
     @Override
     protected void setup() {
 
-        Object[] args = getArguments();
-        if (args != null && args.length >= 4) {
-            sistema = (SistemaFutebol) args[0];
-            xInicial = ((Number) args[1]).doubleValue();
-            yInicial = ((Number) args[2]).doubleValue();
-            golX = ((Number) args[3]).doubleValue();
+        Object[] args = getArguments(); // Pega os argumentos passados para o agente no momento da criação
+
+        if (args == null || args.length < 4) {
+            System.err.println("Erro: argumentos insuficientes para criar o agente jogador " + getLocalName());
+            doDelete();
+            return;
         }
+
+        sistema = (SistemaFutebol) args[0];
+        xInicial = ((Number) args[1]).doubleValue();
+        yInicial = ((Number) args[2]).doubleValue();
+        golX = ((Number) args[3]).doubleValue();
 
         estado = new JogadorEstado();
         estado.x = xInicial;
         estado.y = yInicial;
         estado.golX = golX;
 
-        // Comportamento para ficar ouvindo eventos/mensagens - representa a “caixa de entrada” do agente
+        // Comportamento para ficar ouvindo eventos/mensagens de forma cíclica - representa a “caixa de entrada” do agente
         addBehaviour(new CyclicBehaviour() {
             @Override
             public void action() {
-                MessageTemplate mensagemTemplate = MessageTemplate.MatchConversationId(CONVERSA_ID_DISPUTA);
+                MessageTemplate mensagemTemplate = MessageTemplate.MatchConversationId(CONVERSA_ID_DISPUTA); // Só vai buscar mensagens cuja conversationId seja "disputa-bola"
                 ACLMessage mensagem = myAgent.receive(mensagemTemplate);
 
                 if (mensagem == null) {
-                    block();
+                    block(); // Se nenhuma mensagem foi encontrada, pausa temporariamente esse behaviour (economizar processamento)
                     return;
                 }
 
-                processarMensagemDisputa(mensagem);
+                processarMensagemDisputa(mensagem); // Se chegou mensagem, envia para o método que trata a disputa
             }
         });
 
@@ -91,59 +96,87 @@ public class JogadorAgent extends Agent {
             @Override
             protected void onTick() {
 
-                if (ticksPenalidadePerderDisputaRestantes > 0) {
-                    ticksPenalidadePerderDisputaRestantes--;
-                    temAlvoInterceptacao = false;
-                    atualizarEstadoELogar();
+                if (estaEmPenalidade()) {
+                    reduzirPenalidade();
                     return;
                 }
 
                 if (disputaEmAndamento) {
                     printTerminalEstado();
-                    return;
+                    return; // Encerra o tick para evitar que o jogador se mova enquanto disputa
                 }
 
                 if (tentarIniciarDisputa()) {
-                    atualizarEstadoELogar();
-                    return;
+                    atualizarEstado();
+                    return; // Encerra o tick, porque a prioridade agora é resolver a disputa
                 }
 
-                JogadorEstado algumJogadorComBola = sistema.getJogadorComBola();
+                decidirAcaoPrincipal();
 
-                if (algumJogadorComBola == null) {
-                    temAlvoInterceptacao = false;
-                    perseguirBola();
-
-                } else if (estado.comBola) {
-                    temAlvoInterceptacao = false;
-                    if (USAR_CHUTE_ALEATORIO_TESTE) {
-                        chutarAleatorioParaTeste();
-                    } else {
-                        conduzirAteOGol();
-                    }
-
-                } else {
-
-                    if (!temAlvoInterceptacao) {
-                        double[] ponto = calcularPontoIntercepcao(algumJogadorComBola);
-
-                        alvoInterceptacaoX = ponto[0];
-                        alvoInterceptacaoY = ponto[1];
-
-                        temAlvoInterceptacao = true;
-
-                        System.out.printf(
-                                "[%s] alvo fixado em (%.1f, %.1f)%n",
-                                getLocalName(), alvoInterceptacaoX, alvoInterceptacaoY);
-                    }
-
-                    irParaPontoInterceptacao();
-                }
-
-                atualizarEstadoELogar();
+                atualizarEstado();
             }
         });
     }
+
+    // ----------------------------------------------- INICIO - FUNCOES UTILIZADAS NO AGENTE -----------------------------------------------
+
+    private boolean estaEmPenalidade() {
+        return ticksPenalidadePerderDisputaRestantes > 0;
+    }
+
+    private void reduzirPenalidade() {
+        ticksPenalidadePerderDisputaRestantes--;
+        temAlvoInterceptacao = false;
+        atualizarEstado();
+    }
+
+    private void decidirAcaoPrincipal() {
+        JogadorEstado algumJogadorComBola = sistema.getJogadorComBola();
+
+        if (algumJogadorComBola == null) {
+            agirSemJogadorComBola();
+        } else if (estado.comBola) {
+            agirComBola();
+        } else {
+            agirSemBola(algumJogadorComBola);
+        }
+    }
+
+    private void agirSemJogadorComBola() {
+        temAlvoInterceptacao = false; // Limpa alvo de interceptação, porque não há jogador conduzindo a bola
+        perseguirBola();
+    }
+
+    private void agirComBola() {
+        temAlvoInterceptacao = false; // Limpa alvo de interceptação, porque quem tem a bola não precisa interceptar
+
+        if (USAR_CHUTE_ALEATORIO_TESTE) { // Modo de teste para ver o movimento
+            chutarAleatorioParaTeste();
+        } else {
+            conduzirAteOGol();
+        }
+    }
+
+    private void agirSemBola(JogadorEstado algumJogadorComBola) {
+        // Caso outro jogador esteja com a bola.
+
+        if (!temAlvoInterceptacao) {
+            double[] ponto = calcularPontoIntercepcao(algumJogadorComBola); // Calcula onde o jogador deve tentar interceptar o adversário.
+
+            alvoInterceptacaoX = ponto[0];
+            alvoInterceptacaoY = ponto[1];
+
+            temAlvoInterceptacao = true;
+
+            System.out.printf(
+                    "[%s] alvo fixado em (%.1f, %.1f)%n",
+                    getLocalName(), alvoInterceptacaoX, alvoInterceptacaoY);
+        }
+
+        irParaPontoInterceptacao();
+    }
+
+    // ----------------------------------------------- FIM - FUNCOES UTILIZADAS NO AGENTE -----------------------------------------------
 
     private void processarMensagemDisputa(ACLMessage mensagem) {
         switch (mensagem.getPerformative()) {
@@ -456,7 +489,7 @@ public class JogadorAgent extends Agent {
         }
     }
 
-    private void atualizarEstadoELogar() {
+    private void atualizarEstado() {
         if (sistema != null) {
             sistema.atualizarEstado(getLocalName(), estado);
         }
