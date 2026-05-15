@@ -93,7 +93,7 @@ public class SistemaFutebol {
             String nomeOponente = entry.getKey();
             JogadorEstado estadoOponente = entry.getValue();
 
-            if (nome.equals(nomeOponente) || estadoOponente == null) {
+            if (nome.equals(nomeOponente) || estadoOponente == null || estaEmPenalidade(estadoOponente)) {
                 continue;
             }
 
@@ -134,6 +134,10 @@ public class SistemaFutebol {
         double deltaY = primeiro.y - segundo.y;
         double distancia = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         return distancia <= 1.8;
+    }
+
+    private static boolean estaEmPenalidade(JogadorEstado estado) {
+        return estado.ticksPenalidadePerderDisputaRestantes > 0;
     }
 
     public synchronized void chutarBola(String nomeJogador, double forcaX, double forcaY) {
@@ -355,7 +359,6 @@ public class SistemaFutebol {
     private static class ConfiguracaoJogador {
         private final double xInicial;
         private final double yInicial;
-        @SuppressWarnings("unused")
         private final double golX;
 
         private ConfiguracaoJogador(double xInicial, double yInicial, double golX) {

@@ -126,6 +126,7 @@ public class JogadorAgent extends Agent {
 
     private void reduzirPenalidade() {
         ticksPenalidadePerderDisputaRestantes--;
+        estado.ticksPenalidadePerderDisputaRestantes = ticksPenalidadePerderDisputaRestantes;
         temAlvoInterceptacao = false;
         atualizarEstado();
     }
@@ -265,6 +266,11 @@ public class JogadorAgent extends Agent {
 
         if (id == null) {
             responderRecusa(mensagem, "id-ausente");
+            return;
+        }
+
+        if (estaEmPenalidade()) {
+            responderRecusa(mensagem, "em-penalidade");
             return;
         }
 
@@ -434,6 +440,7 @@ public class JogadorAgent extends Agent {
             estado.comBola = false;
             temAlvoInterceptacao = false;
             ticksPenalidadePerderDisputaRestantes = TICKS_PENALIDADE_PERDER_DISPUTA;
+            estado.ticksPenalidadePerderDisputaRestantes = ticksPenalidadePerderDisputaRestantes;
         }
 
         limparDisputa();

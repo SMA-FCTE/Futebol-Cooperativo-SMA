@@ -7,5 +7,6 @@ public class JogadorEstado {
     public double velocidade = 1.0;
 
     public boolean comBola = false;
+    public int ticksPenalidadePerderDisputaRestantes = 0;
     public double golX;
 }
