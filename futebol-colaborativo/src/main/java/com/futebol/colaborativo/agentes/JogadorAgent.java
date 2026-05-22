@@ -1,6 +1,13 @@
 package com.futebol.colaborativo.agentes;
 
 import com.futebol.colaborativo.SistemaFutebol;
+import com.futebol.colaborativo.estrategia.ControladorDecisaoJogador;
+import com.futebol.colaborativo.estrategia.PerfilTatico;
+import com.futebol.colaborativo.jogo.ConfiguracaoJogador;
+import com.futebol.colaborativo.jogo.ContextoDecisao;
+import com.futebol.colaborativo.jogo.PapelJogador;
+import com.futebol.colaborativo.jogo.Time;
+import com.futebol.colaborativo.jogo.TipoDecisao;
 import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.model.JogadorEstado;
 import com.futebol.colaborativo.movimento.Movimento;
@@ -21,11 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class JogadorAgent extends Agent {
 
     static final String CONVERSA_ID_DISPUTA = "disputa-bola";
-    private static final boolean USAR_CHUTE_ALEATORIO_TESTE = true;
-    private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 4;
+    private static final boolean USAR_CHUTE_ALEATORIO_TESTE = false;
+    private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 20;
     private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
     private static final double FORCA_CHUTE = 1.65;
     private static final double FORCA_CHUTE_ALEATORIO_TESTE = 1.35;
+    private static final double DISTANCIA_POSICAO_DEFENSIVA_DO_GOL = 8.0;
     private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong(); // Garante que dois agentes não iniciem disputa com o mesmo ID
 
     private JogadorEstado estado;
@@ -37,6 +45,11 @@ public class JogadorAgent extends Agent {
 
     // Atributo da posição do gol
     private double golX;
+    private Time time;
+    private PapelJogador papel;
+    private PerfilTatico perfilTatico;
+    private ControladorDecisaoJogador controladorDecisao;
+    private int ticksBolaLivre = 0;
 
     // Atributos da posição de interceptação
     private double alvoInterceptacaoX;
@@ -58,16 +71,21 @@ public class JogadorAgent extends Agent {
 
         Object[] args = getArguments(); // Pega os argumentos passados para o agente no momento da criação
 
-        if (args == null || args.length < 4) {
+        if (args == null || args.length < 2 || !(args[1] instanceof ConfiguracaoJogador)) {
             System.err.println("Erro: argumentos insuficientes para criar o agente jogador " + getLocalName());
             doDelete();
             return;
         }
 
         sistema = (SistemaFutebol) args[0];
-        xInicial = ((Number) args[1]).doubleValue();
-        yInicial = ((Number) args[2]).doubleValue();
-        golX = ((Number) args[3]).doubleValue();
+        ConfiguracaoJogador configuracao = (ConfiguracaoJogador) args[1];
+        xInicial = configuracao.getXInicial();
+        yInicial = configuracao.getYInicial();
+        golX = configuracao.getGolX();
+        time = configuracao.getTime();
+        papel = configuracao.getPapel();
+        perfilTatico = PerfilTatico.equilibrado();
+        controladorDecisao = new ControladorDecisaoJogador();
 
         estado = new JogadorEstado();
         estado.x = xInicial;
@@ -91,7 +109,7 @@ public class JogadorAgent extends Agent {
         });
 
         // Comportamento principal de decisão do agente
-        addBehaviour(new TickerBehaviour(this, 50) {
+        addBehaviour(new TickerBehaviour(this, 100) {
 
             @Override
             protected void onTick() {
@@ -132,14 +150,57 @@ public class JogadorAgent extends Agent {
     }
 
     private void decidirAcaoPrincipal() {
-        JogadorEstado algumJogadorComBola = sistema.getJogadorComBola();
+        ContextoDecisao contexto = montarContextoDecisao();
+        TipoDecisao decisao = controladorDecisao.decidir(contexto);
 
-        if (algumJogadorComBola == null) {
-            agirSemJogadorComBola();
-        } else if (estado.comBola) {
-            agirComBola();
-        } else {
-            agirSemBola(algumJogadorComBola);
+        executarDecisao(decisao, contexto);
+    }
+
+    private ContextoDecisao montarContextoDecisao() {
+        JogadorEstado jogadorComBola = sistema == null ? null : sistema.getJogadorComBola();
+        atualizarContadorBolaLivre(jogadorComBola);
+
+        return new ContextoDecisao(
+                getLocalName(),
+                estado,
+                jogadorComBola,
+                papel,
+                time,
+                perfilTatico,
+                ticksBolaLivre);
+    }
+
+    private void atualizarContadorBolaLivre(JogadorEstado jogadorComBola) {
+        if (jogadorComBola == null) {
+            ticksBolaLivre++;
+            return;
+        }
+
+        ticksBolaLivre = 0;
+    }
+
+    private void executarDecisao(TipoDecisao decisao, ContextoDecisao contexto) {
+        switch (decisao) {
+            case PERSEGUIR_BOLA:
+                agirSemJogadorComBola();
+                break;
+            case AGIR_COM_BOLA:
+                agirComBola();
+                break;
+            case INTERCEPTAR:
+                if (contexto.getJogadorComBola() == null) {
+                    manterPosicaoDefensiva();
+                } else {
+                    agirSemBola(contexto.getJogadorComBola());
+                }
+                break;
+            case MANTER_POSICAO_DEFENSIVA:
+                manterPosicaoDefensiva();
+                break;
+            case MANTER_POSICAO:
+            default:
+                temAlvoInterceptacao = false;
+                break;
         }
     }
 
@@ -613,6 +674,21 @@ public class JogadorAgent extends Agent {
 
     private double getProprioGolX() {
         return golX == 0 ? Ambiente.largura : 0;
+    }
+
+    private void manterPosicaoDefensiva() {
+        temAlvoInterceptacao = false;
+        Movimento.mover(estado, getPosicaoDefensivaX(), Ambiente.golY);
+    }
+
+    private double getPosicaoDefensivaX() {
+        double proprioGolX = getProprioGolX();
+
+        if (proprioGolX == 0) {
+            return DISTANCIA_POSICAO_DEFENSIVA_DO_GOL;
+        }
+
+        return Ambiente.largura - DISTANCIA_POSICAO_DEFENSIVA_DO_GOL;
     }
 
     private double[] calcularPontoIntercepcao(JogadorEstado alvo) {

@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
 import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.dto.DisputaBolaEstadoDTO;
+import com.futebol.colaborativo.jogo.ConfiguracaoJogador;
 import com.futebol.colaborativo.model.JogadorEstado;
 
 public class SistemaFutebol {
@@ -52,19 +53,20 @@ public class SistemaFutebol {
         }
     }
 
-    public String criarJogador(String nome, double xInicial, double yInicial, double golX) {
+    public String criarJogador(ConfiguracaoJogador configuracao) {
         try {
+            String nome = configuracao.getNome();
             if (jogadores.containsKey(nome)) {
                 return "Jogador já existe";
             }
 
-            configuracoes.put(nome, new ConfiguracaoJogador(xInicial, yInicial, golX));
-            estados.put(nome, criarEstadoInicial(xInicial, yInicial, golX));
+            configuracoes.put(nome, configuracao);
+            estados.put(nome, criarEstadoInicial(configuracao));
 
             AgentController agent = container.createNewAgent(
                 nome,
                 "com.futebol.colaborativo.agentes.JogadorAgent",
-                new Object[]{ this, xInicial, yInicial, golX }
+                new Object[]{ this, configuracao }
             );
 
             agent.start();
@@ -214,7 +216,7 @@ public class SistemaFutebol {
 
     private String localizarUltimoAtacante(double golAtingido) {
         for (Map.Entry<String, ConfiguracaoJogador> entry : configuracoes.entrySet()) {
-            if (entry.getValue().golX == golAtingido) {
+            if (entry.getValue().getGolX() == golAtingido) {
                 return entry.getKey();
             }
         }
@@ -312,8 +314,8 @@ public class SistemaFutebol {
             }
 
             ConfiguracaoJogador configuracao = entry.getValue();
-            estado.x = configuracao.xInicial;
-            estado.y = configuracao.yInicial;
+            estado.x = configuracao.getXInicial();
+            estado.y = configuracao.getYInicial();
             estado.comBola = false;
         }
 
@@ -338,11 +340,11 @@ public class SistemaFutebol {
         }
     }
 
-    private JogadorEstado criarEstadoInicial(double xInicial, double yInicial, double golX) {
+    private JogadorEstado criarEstadoInicial(ConfiguracaoJogador configuracao) {
         JogadorEstado estado = new JogadorEstado();
-        estado.x = xInicial;
-        estado.y = yInicial;
-        estado.golX = golX;
+        estado.x = configuracao.getXInicial();
+        estado.y = configuracao.getYInicial();
+        estado.golX = configuracao.getGolX();
         return estado;
     }
 
@@ -354,17 +356,5 @@ public class SistemaFutebol {
 
         String json = gson.toJson(resposta);
         EventSocket.enviarMensagemParaClientes(json);
-    }
-
-    private static class ConfiguracaoJogador {
-        private final double xInicial;
-        private final double yInicial;
-        private final double golX;
-
-        private ConfiguracaoJogador(double xInicial, double yInicial, double golX) {
-            this.xInicial = xInicial;
-            this.yInicial = yInicial;
-            this.golX = golX;
-        }
     }
 }

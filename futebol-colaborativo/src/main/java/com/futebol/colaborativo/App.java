@@ -7,12 +7,15 @@ import jade.wrapper.AgentContainer;
 
 import com.futebol.colaborativo.api.ApiServer;
 import com.futebol.colaborativo.api.EventSocket;
+import com.futebol.colaborativo.jogo.ConfiguracaoJogador;
+import com.futebol.colaborativo.jogo.PapelJogador;
+import com.futebol.colaborativo.jogo.Time;
 import com.futebol.colaborativo.model.Ambiente;
 
 public class App {
-    private static final double AZUL_X_INICIAL = 50;
-    private static final double AZUL_Y_INICIAL = 30;
-    private static final double VERMELHO_X_INICIAL = 20;
+    private static final double AZUL_X_INICIAL = 40;
+    private static final double AZUL_Y_INICIAL = 20;
+    private static final double VERMELHO_X_INICIAL = 60;
     private static final double VERMELHO_Y_INICIAL = 20;
 
     public static void main(String[] args) {
@@ -30,13 +33,22 @@ public class App {
             sistema.iniciarBola();
 
             // 3. Criar jogadores iniciais
-            sistema.criarJogador("azul", AZUL_X_INICIAL, AZUL_Y_INICIAL, 0);
-            sistema.criarJogador(
+            sistema.criarJogador(new ConfiguracaoJogador(
+                "azul",
+                AZUL_X_INICIAL,
+                AZUL_Y_INICIAL,
+                0,
+                Time.AZUL,
+                PapelJogador.JOGADOR
+            ));
+            sistema.criarJogador(new ConfiguracaoJogador(
                 "vermelho",
                 VERMELHO_X_INICIAL,
                 VERMELHO_Y_INICIAL,
-                Ambiente.largura
-            );
+                Ambiente.largura,
+                Time.VERMELHO,
+                PapelJogador.JOGADOR
+            ));
 
             // 4. Subir API REST
             ApiServer.start(sistema);
