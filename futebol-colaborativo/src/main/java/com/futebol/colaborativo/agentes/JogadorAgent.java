@@ -273,15 +273,7 @@ public class JogadorAgent extends Agent {
     }
 
     private boolean deveIniciarDisputa(SistemaFutebol.OponenteDisputa oponente) {
-        if (!estado.comBola && oponente.comBola) {
-            return true;
-        }
-
-        if (estado.comBola && !oponente.comBola) {
-            return false;
-        }
-
-        return getLocalName().compareTo(oponente.nome) < 0;
+        return !estado.comBola && oponente.comBola;
     }
 
     private void iniciarDisputa(String nomeOponente) {
