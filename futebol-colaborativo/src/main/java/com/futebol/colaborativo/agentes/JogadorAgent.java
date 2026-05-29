@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class JogadorAgent extends Agent {
 
     static final String CONVERSA_ID_DISPUTA = "disputa-bola";
-    private static final boolean USAR_CHUTE_ALEATORIO_TESTE = false;
+    private static final boolean USAR_CHUTE_ALEATORIO_TESTE = true;
     private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 20;
     private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
     private static final double FORCA_CHUTE = 1.65;
@@ -113,25 +113,7 @@ public class JogadorAgent extends Agent {
 
             @Override
             protected void onTick() {
-
-                if (estaEmPenalidade()) {
-                    reduzirPenalidade();
-                    return;
-                }
-
-                if (disputaEmAndamento) {
-                    printTerminalEstado();
-                    return; // Encerra o tick para evitar que o jogador se mova enquanto disputa
-                }
-
-                if (tentarIniciarDisputa()) {
-                    atualizarEstado();
-                    return; // Encerra o tick, porque a prioridade agora é resolver a disputa
-                }
-
                 decidirAcaoPrincipal();
-
-                atualizarEstado();
             }
         });
     }
@@ -150,10 +132,25 @@ public class JogadorAgent extends Agent {
     }
 
     private void decidirAcaoPrincipal() {
+        if (estaEmPenalidade()) {
+            reduzirPenalidade();
+            return;
+        }
+
+        if (disputaEmAndamento) {
+            printTerminalEstado();
+            return;
+        }
+
+        if (tentarIniciarDisputa()) {
+            atualizarEstado();
+            return;
+        }
+
         ContextoDecisao contexto = montarContextoDecisao();
         TipoDecisao decisao = controladorDecisao.decidir(contexto);
-
         executarDecisao(decisao, contexto);
+        atualizarEstado();
     }
 
     private ContextoDecisao montarContextoDecisao() {
