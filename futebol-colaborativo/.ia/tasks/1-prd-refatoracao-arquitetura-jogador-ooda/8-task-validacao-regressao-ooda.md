@@ -1,6 +1,6 @@
 # Task 8: Validar Regressao da Refatoracao OODA
 
-> **Status:** pending
+> **Status:** completed
 > **PRD:** `1-prd.md`
 > **TechSpec:** `2-techspec.md`
 
@@ -56,3 +56,14 @@ Verificar:
 
 - Validacoes executadas ou bloqueios documentados.
 - Riscos restantes anotados para a proxima etapa.
+
+## Resultado
+
+- Testes automatizados: `BUILD SUCCESS` com 10 testes (executado na Task 7).
+- Validacao manual executada em 2026-05-29:
+  - Backend subiu com `mvn exec:java`.
+  - Frontend subiu com `npm run dev`.
+  - Agentes `azul`, `vermelho` e `bola` criados corretamente.
+  - Jogadores em movimento e bola atualizando posicao.
+  - Frontend renderizando campo sem erro critico.
+- PRD 1 (Refatoracao OODA) concluido.

@@ -10,8 +10,6 @@ import java.util.Objects;
 
 public class ControladorDecisaoJogador {
 
-    static final int TICKS_BOLA_LIVRE_FORCAR_PERSEGUIR = 10;
-
     private final SeletorDecisaoPonderada seletorDecisao;
 
     public ControladorDecisaoJogador() {
@@ -45,7 +43,7 @@ public class ControladorDecisaoJogador {
             return TipoDecisao.PERSEGUIR_BOLA;
         }
 
-        if (contexto.getTicksBolaLivre() >= TICKS_BOLA_LIVRE_FORCAR_PERSEGUIR) {
+        if (contexto.getTicksBolaLivre() >= contexto.getPerfilTatico().getTicksBolaLivreParaForcar()) {
             return TipoDecisao.PERSEGUIR_BOLA;
         }
 

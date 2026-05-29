@@ -5,6 +5,7 @@ import jade.wrapper.AgentController;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
@@ -32,6 +33,17 @@ public class SistemaFutebol {
 
     public SistemaFutebol(AgentContainer container) {
         this.container = container;
+    }
+
+    public void chuteBolaInicialAleatorio() {
+        Random random = new Random();
+        double angulo = random.nextDouble() * 2 * Math.PI;
+        double forca = 0.5 + random.nextDouble() * 0.3;
+        double forcaX = Math.cos(angulo) * forca;
+        double forcaY = Math.sin(angulo) * forca;
+        Ambiente.bola.soltarComForca(forcaX, forcaY);
+        System.out.printf("Chute inicial aleatorio: forca (%.2f, %.2f)%n", forcaX, forcaY);
+        enviarEstadoAtualParaClientes();
     }
 
     public String iniciarBola() {
@@ -91,11 +103,18 @@ public class SistemaFutebol {
     public synchronized OponenteDisputa localizarOponenteProximoParaDisputa(String nome, JogadorEstado estadoAtual) {
         OponenteDisputa oponenteEncontrado = null;
 
+        ConfiguracaoJogador confAtual = configuracoes.get(nome);
+
         for (Map.Entry<String, JogadorEstado> entry : estados.entrySet()) {
             String nomeOponente = entry.getKey();
             JogadorEstado estadoOponente = entry.getValue();
 
             if (nome.equals(nomeOponente) || estadoOponente == null || estaEmPenalidade(estadoOponente)) {
+                continue;
+            }
+
+            ConfiguracaoJogador confOponente = configuracoes.get(nomeOponente);
+            if (confAtual == null || confOponente == null || confAtual.getTime() == confOponente.getTime()) {
                 continue;
             }
 
@@ -306,6 +325,7 @@ public class SistemaFutebol {
         System.out.println(nome + " marcou um gol!");
 
         Ambiente.bola.posicionarNoCentro();
+        chuteBolaInicialAleatorio();
 
         for (Map.Entry<String, ConfiguracaoJogador> entry : configuracoes.entrySet()) {
             JogadorEstado estado = estados.get(entry.getKey());

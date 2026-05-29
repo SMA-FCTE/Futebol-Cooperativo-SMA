@@ -66,7 +66,7 @@ class ControladorDecisaoJogadorTest {
         TipoDecisao decisao = controlador.decidir(criarContexto(
                 estadoAtual,
                 null,
-                ControladorDecisaoJogador.TICKS_BOLA_LIVRE_FORCAR_PERSEGUIR));
+                PerfilTatico.equilibrado().getTicksBolaLivreParaForcar()));
 
         assertEquals(TipoDecisao.PERSEGUIR_BOLA, decisao);
     }

@@ -13,10 +13,12 @@ import com.futebol.colaborativo.jogo.Time;
 import com.futebol.colaborativo.model.Ambiente;
 
 public class App {
-    private static final double AZUL_X_INICIAL = 40;
-    private static final double AZUL_Y_INICIAL = 20;
-    private static final double VERMELHO_X_INICIAL = 60;
-    private static final double VERMELHO_Y_INICIAL = 20;
+    private static final boolean CHUTAR_BOLA_NO_INICIO = true;
+    private static final double Y_INICIAL = 30;
+    private static final double AZUL_ATACANTE_X = 45;
+    private static final double AZUL_ZAGUEIRO_X = 20;
+    private static final double VERMELHO_ATACANTE_X = 55;
+    private static final double VERMELHO_ZAGUEIRO_X = 80;
 
     public static void main(String[] args) {
         try {
@@ -34,23 +36,20 @@ public class App {
 
             // 3. Criar jogadores iniciais
             sistema.criarJogador(new ConfiguracaoJogador(
-                "azul",
-                AZUL_X_INICIAL,
-                AZUL_Y_INICIAL,
-                0,
-                Time.AZUL,
-                PapelJogador.JOGADOR
-            ));
+                "azul-atacante", AZUL_ATACANTE_X, Y_INICIAL, Ambiente.largura, Time.AZUL, PapelJogador.ATACANTE));
             sistema.criarJogador(new ConfiguracaoJogador(
-                "vermelho",
-                VERMELHO_X_INICIAL,
-                VERMELHO_Y_INICIAL,
-                Ambiente.largura,
-                Time.VERMELHO,
-                PapelJogador.JOGADOR
-            ));
+                "azul-zagueiro", AZUL_ZAGUEIRO_X, Y_INICIAL, Ambiente.largura, Time.AZUL, PapelJogador.ZAGUEIRO));
+            sistema.criarJogador(new ConfiguracaoJogador(
+                "vermelho-atacante", VERMELHO_ATACANTE_X, Y_INICIAL, 0, Time.VERMELHO, PapelJogador.ATACANTE));
+            sistema.criarJogador(new ConfiguracaoJogador(
+                "vermelho-zagueiro", VERMELHO_ZAGUEIRO_X, Y_INICIAL, 0, Time.VERMELHO, PapelJogador.ZAGUEIRO));
 
-            // 4. Subir API REST
+            // 4. Chute inicial na bola (opcional)
+            if (CHUTAR_BOLA_NO_INICIO) {
+                sistema.chuteBolaInicialAleatorio();
+            }
+
+            // 5. Subir API REST
             ApiServer.start(sistema);
 
             // WebSocket

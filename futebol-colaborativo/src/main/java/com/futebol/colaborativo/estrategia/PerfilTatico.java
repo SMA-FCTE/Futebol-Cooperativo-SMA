@@ -14,22 +14,25 @@ public class PerfilTatico {
     private final Map<TipoDecisao, Integer> pesosBolaLivre;
     private final Map<TipoDecisao, Integer> pesosOutroJogadorComBola;
     private final Map<TipoDecisao, Integer> pesosComBola;
+    private final int ticksBolaLivreParaForcar;
 
     private PerfilTatico(
             PapelJogador papel,
             Map<TipoDecisao, Integer> pesosBolaLivre,
             Map<TipoDecisao, Integer> pesosOutroJogadorComBola,
-            Map<TipoDecisao, Integer> pesosComBola) {
+            Map<TipoDecisao, Integer> pesosComBola,
+            int ticksBolaLivreParaForcar) {
         this.papel = Objects.requireNonNull(papel, "papel");
         this.pesosBolaLivre = copiarPesos(pesosBolaLivre);
         this.pesosOutroJogadorComBola = copiarPesos(pesosOutroJogadorComBola);
         this.pesosComBola = copiarPesos(pesosComBola);
+        this.ticksBolaLivreParaForcar = ticksBolaLivreParaForcar;
     }
 
     public static PerfilTatico equilibrado() {
         Map<TipoDecisao, Integer> bolaLivre = new EnumMap<>(TipoDecisao.class);
-        bolaLivre.put(TipoDecisao.PERSEGUIR_BOLA, 40);
-        bolaLivre.put(TipoDecisao.MANTER_POSICAO_DEFENSIVA, 60);
+        bolaLivre.put(TipoDecisao.PERSEGUIR_BOLA, 10);
+        bolaLivre.put(TipoDecisao.MANTER_POSICAO_DEFENSIVA, 90);
 
         Map<TipoDecisao, Integer> outroJogadorComBola = new EnumMap<>(TipoDecisao.class);
         outroJogadorComBola.put(TipoDecisao.INTERCEPTAR, 100);
@@ -37,7 +40,35 @@ public class PerfilTatico {
         Map<TipoDecisao, Integer> comBola = new EnumMap<>(TipoDecisao.class);
         comBola.put(TipoDecisao.AGIR_COM_BOLA, 100);
 
-        return new PerfilTatico(PapelJogador.JOGADOR, bolaLivre, outroJogadorComBola, comBola);
+        return new PerfilTatico(PapelJogador.JOGADOR, bolaLivre, outroJogadorComBola, comBola, 10);
+    }
+
+    public static PerfilTatico atacante() {
+        Map<TipoDecisao, Integer> bolaLivre = new EnumMap<>(TipoDecisao.class);
+        bolaLivre.put(TipoDecisao.PERSEGUIR_BOLA, 75);
+        bolaLivre.put(TipoDecisao.MANTER_POSICAO_DEFENSIVA, 25);
+
+        Map<TipoDecisao, Integer> outroJogadorComBola = new EnumMap<>(TipoDecisao.class);
+        outroJogadorComBola.put(TipoDecisao.INTERCEPTAR, 100);
+
+        Map<TipoDecisao, Integer> comBola = new EnumMap<>(TipoDecisao.class);
+        comBola.put(TipoDecisao.AGIR_COM_BOLA, 100);
+
+        return new PerfilTatico(PapelJogador.ATACANTE, bolaLivre, outroJogadorComBola, comBola, 5);
+    }
+
+    public static PerfilTatico zagueiro() {
+        Map<TipoDecisao, Integer> bolaLivre = new EnumMap<>(TipoDecisao.class);
+        bolaLivre.put(TipoDecisao.PERSEGUIR_BOLA, 25);
+        bolaLivre.put(TipoDecisao.MANTER_POSICAO_DEFENSIVA, 75);
+
+        Map<TipoDecisao, Integer> outroJogadorComBola = new EnumMap<>(TipoDecisao.class);
+        outroJogadorComBola.put(TipoDecisao.INTERCEPTAR, 100);
+
+        Map<TipoDecisao, Integer> comBola = new EnumMap<>(TipoDecisao.class);
+        comBola.put(TipoDecisao.AGIR_COM_BOLA, 100);
+
+        return new PerfilTatico(PapelJogador.ZAGUEIRO, bolaLivre, outroJogadorComBola, comBola, 25);
     }
 
     public PapelJogador getPapel() {
@@ -54,6 +85,10 @@ public class PerfilTatico {
 
     public Map<TipoDecisao, Integer> getPesosComBola() {
         return pesosComBola;
+    }
+
+    public int getTicksBolaLivreParaForcar() {
+        return ticksBolaLivreParaForcar;
     }
 
     private static Map<TipoDecisao, Integer> copiarPesos(Map<TipoDecisao, Integer> pesos) {

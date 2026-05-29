@@ -84,7 +84,11 @@ public class JogadorAgent extends Agent {
         golX = configuracao.getGolX();
         time = configuracao.getTime();
         papel = configuracao.getPapel();
-        perfilTatico = PerfilTatico.equilibrado();
+        perfilTatico = switch (papel) {
+            case ATACANTE -> PerfilTatico.atacante();
+            case ZAGUEIRO -> PerfilTatico.zagueiro();
+            default -> PerfilTatico.equilibrado();
+        };
         controladorDecisao = new ControladorDecisaoJogador();
 
         estado = new JogadorEstado();
