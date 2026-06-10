@@ -1,4 +1,4 @@
-export type TeamId = 'A' | 'B' | 'unknown'
+export type TeamId = 'AZUL' | 'VERMELHO' | 'unknown'
 
 export type PayloadFormat = 'legacy-flat' | 'legacy-nested' | 'snapshot'
 
@@ -63,6 +63,8 @@ export type LegacyPlayerPayload = {
   theta?: unknown
   comBola?: unknown
   golX?: unknown
+  time?: unknown
+  papel?: unknown
 }
 
 export type LegacyFlatPayload = Record<string, LegacyPlayerPayload>

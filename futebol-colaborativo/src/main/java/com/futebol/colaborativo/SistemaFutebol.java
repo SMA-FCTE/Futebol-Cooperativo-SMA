@@ -365,6 +365,8 @@ public class SistemaFutebol {
         estado.x = configuracao.getXInicial();
         estado.y = configuracao.getYInicial();
         estado.golX = configuracao.getGolX();
+        estado.time = configuracao.getTime().name();
+        estado.papel = configuracao.getPapel().name();
         return estado;
     }
 

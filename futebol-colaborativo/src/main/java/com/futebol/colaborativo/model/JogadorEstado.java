@@ -9,4 +9,7 @@ public class JogadorEstado {
     public boolean comBola = false;
     public int ticksPenalidadePerderDisputaRestantes = 0;
     public double golX;
+
+    public String time;
+    public String papel;
 }

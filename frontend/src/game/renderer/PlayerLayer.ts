@@ -89,9 +89,9 @@ export class PlayerLayer {
 
   private getTeamColor(team: TeamId): number {
     switch (team) {
-      case 'A':
+      case 'AZUL':
         return 0x1d4ed8
-      case 'B':
+      case 'VERMELHO':
         return 0xdc2626
       default:
         return 0xf59e0b

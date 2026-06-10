@@ -214,7 +214,7 @@ function normalizeLegacyPlayer(id: string, value: unknown): PlayerState | null {
 
   return {
     id,
-    team: inferTeamFromId(id),
+    team: normalizeTeam(value.time),
     x,
     y,
     velocidade: coerceNullableNumber(value.velocidade) ?? 0,
@@ -222,12 +222,6 @@ function normalizeLegacyPlayer(id: string, value: unknown): PlayerState | null {
     comBola: typeof value.comBola === 'boolean' ? value.comBola : false,
     golX: coerceNullableNumber(value.golX),
   }
-}
-
-function inferTeamFromId(id: string): TeamId {
-  if (id.startsWith('azul')) return 'A'
-  if (id.startsWith('vermelho')) return 'B'
-  return 'unknown'
 }
 
 function normalizeSnapshotPlayer(value: unknown): PlayerState | null {
@@ -328,7 +322,7 @@ function normalizeScoreboard(value: unknown) {
 }
 
 function normalizeTeam(value: unknown): TeamId {
-  return value === 'A' || value === 'B' ? value : 'unknown'
+  return value === 'AZUL' || value === 'VERMELHO' ? value : 'unknown'
 }
 
 function inferPossessorId(players: PlayerState[]): string | null {

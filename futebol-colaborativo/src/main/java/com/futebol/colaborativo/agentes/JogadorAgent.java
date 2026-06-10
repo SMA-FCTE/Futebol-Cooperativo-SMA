@@ -95,6 +95,8 @@ public class JogadorAgent extends Agent {
         estado.x = xInicial;
         estado.y = yInicial;
         estado.golX = golX;
+        estado.time = time.name();
+        estado.papel = papel.name();
 
         // Comportamento para ficar ouvindo eventos/mensagens de forma cíclica - representa a “caixa de entrada” do agente
         addBehaviour(new CyclicBehaviour() {

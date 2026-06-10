@@ -36,13 +36,13 @@ public class App {
 
             // 3. Criar jogadores iniciais
             sistema.criarJogador(new ConfiguracaoJogador(
-                "azul-atacante", AZUL_ATACANTE_X, Y_INICIAL, Ambiente.largura, Time.AZUL, PapelJogador.ATACANTE));
+                "atacante-1", AZUL_ATACANTE_X, Y_INICIAL, Ambiente.largura, Time.AZUL, PapelJogador.ATACANTE));
             sistema.criarJogador(new ConfiguracaoJogador(
-                "azul-zagueiro", AZUL_ZAGUEIRO_X, Y_INICIAL, Ambiente.largura, Time.AZUL, PapelJogador.ZAGUEIRO));
+                "zagueiro-1", AZUL_ZAGUEIRO_X, Y_INICIAL, Ambiente.largura, Time.AZUL, PapelJogador.ZAGUEIRO));
             sistema.criarJogador(new ConfiguracaoJogador(
-                "vermelho-atacante", VERMELHO_ATACANTE_X, Y_INICIAL, 0, Time.VERMELHO, PapelJogador.ATACANTE));
+                "atacante-2", VERMELHO_ATACANTE_X, Y_INICIAL, 0, Time.VERMELHO, PapelJogador.ATACANTE));
             sistema.criarJogador(new ConfiguracaoJogador(
-                "vermelho-zagueiro", VERMELHO_ZAGUEIRO_X, Y_INICIAL, 0, Time.VERMELHO, PapelJogador.ZAGUEIRO));
+                "zagueiro-2", VERMELHO_ZAGUEIRO_X, Y_INICIAL, 0, Time.VERMELHO, PapelJogador.ZAGUEIRO));
 
             // 4. Chute inicial na bola (opcional)
             if (CHUTAR_BOLA_NO_INICIO) {
