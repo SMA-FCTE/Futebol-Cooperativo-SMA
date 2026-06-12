@@ -32,7 +32,8 @@ public class JogadorAgent extends Agent {
     private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 20;
     private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
     private static final double FORCA_CHUTE = 1.65;
-    private static final double FORCA_CHUTE_ALEATORIO_TESTE = 1.35;
+    private static final double MAX_DESVIO_ANGULO = Math.PI * 2.0 / 3.0; // 120 graus
+    private static final double FORCA_CHUTE_DIRIGIDO = 1.35;
     private static final double DISTANCIA_POSICAO_DEFENSIVA_DO_GOL = 8.0;
     private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong(); // Garante que dois agentes não iniciem disputa com o mesmo ID
 
@@ -216,7 +217,7 @@ public class JogadorAgent extends Agent {
         temAlvoInterceptacao = false; // Limpa alvo de interceptação, porque quem tem a bola não precisa interceptar
 
         if (USAR_CHUTE_ALEATORIO_TESTE) { // Modo de teste para ver o movimento
-            chutarAleatorioParaTeste();
+            chutarDirigidoAoGol();
         } else {
             conduzirAteOGol();
         }
@@ -645,13 +646,13 @@ public class JogadorAgent extends Agent {
         System.out.printf("[%s] chutou para o gol com forca (%.2f, %.2f)%n", getLocalName(), forcaX, forcaY);
     }
 
-    private void chutarAleatorioParaTeste() {
-        double forcaX = (random.nextDouble() * 2.0 - 1.0) * FORCA_CHUTE_ALEATORIO_TESTE;
-        double forcaY = (random.nextDouble() * 2.0 - 1.0) * FORCA_CHUTE_ALEATORIO_TESTE;
+    private void chutarDirigidoAoGol() {
+        double anguloBase = Math.atan2(Ambiente.golY - estado.y, golX - estado.x);
+        double ruido = (random.nextDouble() * 2.0 - 1.0) * MAX_DESVIO_ANGULO;
+        double anguloFinal = anguloBase + ruido;
 
-        if (Math.abs(forcaX) < 0.25 && Math.abs(forcaY) < 0.25) {
-            forcaX = random.nextBoolean() ? FORCA_CHUTE_ALEATORIO_TESTE : -FORCA_CHUTE_ALEATORIO_TESTE;
-        }
+        double forcaX = Math.cos(anguloFinal) * FORCA_CHUTE_DIRIGIDO;
+        double forcaY = Math.sin(anguloFinal) * FORCA_CHUTE_DIRIGIDO;
 
         estado.comBola = false;
 
@@ -664,7 +665,11 @@ public class JogadorAgent extends Agent {
             sistema.atualizarEstado(getLocalName(), estado);
         }
 
-        System.out.printf("[%s] chute aleatorio de teste com forca (%.2f, %.2f)%n", getLocalName(), forcaX, forcaY);
+        System.out.printf("[%s] chute dirigido | angulo_base=%.0f° | desvio=%.0f° | forca=(%.2f, %.2f)%n",
+                getLocalName(),
+                Math.toDegrees(anguloBase),
+                Math.toDegrees(ruido),
+                forcaX, forcaY);
     }
 
     private double getProprioGolX() {
