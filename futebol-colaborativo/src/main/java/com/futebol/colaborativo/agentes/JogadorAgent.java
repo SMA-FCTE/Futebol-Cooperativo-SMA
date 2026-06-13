@@ -32,9 +32,37 @@ public class JogadorAgent extends Agent {
     private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 20;
     private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
     private static final double FORCA_CHUTE = 1.65;
-    private static final double MAX_DESVIO_ANGULO = Math.PI * 2.0 / 3.0; // 120 graus
+    private static final double MAX_DESVIO_ANGULO = Math.PI / 6PS C:\Users\brena\OneDrive\Documentos\UNB\SMA\ProjectsSMA\Futebol-Cooperativo-SMA\futebol-colaborativo> git status        
+On branch nova-versao-vetor                                  
+Your branch is ahead of 'origin/nova-versao-vetor' by 1 commit.        
+  (use "git push" to publish your local commits)
+                                                             
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .ia/tasks/3-prd-colaboracao-basica/4-task-posicionamento-por-zona.md
+        modified:   src/main/java/com/futebol/colaborativo/agentes/JogadorAgent.java
+        modified:   src/main/java/com/futebol/colaborativo/estrategia/ControladorDecisaoJogador.java
+        modified:   src/main/java/com/futebol/colaborativo/jogo/ContextoDecisao.java
+        modified:   src/main/java/com/futebol/colaborativo/jogo/TipoDecisao.java
+        modified:   src/main/java/com/futebol/colaborativo/movimento/Movimento.java
+        modified:   src/test/java/com/futebol/colaborativo/estrategia/ControladorDecisaoJogadorTest.java
+
+no changes added to commit (use "git add" and/or "git commit -a")
+PS C:\Users\brena\OneDrive\Documentos\UNB\SMA\ProjectsSMA\Futebol-Cooperativo-SMA\futebol-colaborativo> git diff
+diff --git a/futebol-colaborativo/.ia/tasks/3-prd-colaboracao-basica/4-task-posicionamento-por-zona.md b/futebol-colaborativo/.ia/tasks/3-prd-colaboracao-basica/4-task-posicionamento-por-zona.md
+index 44bb7a3..e881fa7 100644
+--- a/futebol-colaborativo/.ia/tasks/3-prd-colaboracao-basica/4-task-posicionamento-por-zona.md
++++ b/futebol-colaborativo/.ia/tasks/3-prd-colaboracao-basica/4-task-posicionamento-por-zona.md
+@@ -1,6 +1,6 @@
+ # Task 4: Posicionamento por Zona
+ 
+:.0; // 120 graus
     private static final double FORCA_CHUTE_DIRIGIDO = 1.35;
     private static final double DISTANCIA_POSICAO_DEFENSIVA_DO_GOL = 8.0;
+    // Mais distante do gol que a posicao defensiva: o atacante espera proximo ao
+    // meio-campo, sem se sobrepor ao zagueiro adversario (que fica colado no gol).
+    private static final double DISTANCIA_POSICAO_OFENSIVA_DO_GOL = 35.0;
     private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong(); // Garante que dois agentes não iniciem disputa com o mesmo ID
 
     private JogadorEstado estado;
@@ -200,6 +228,9 @@ public class JogadorAgent extends Agent {
                 break;
             case MANTER_POSICAO_DEFENSIVA:
                 manterPosicaoDefensiva();
+                break;
+            case MANTER_POSICAO_OFENSIVA:
+                manterPosicaoOfensiva();
                 break;
             case MANTER_POSICAO:
             default:
@@ -689,6 +720,20 @@ public class JogadorAgent extends Agent {
         }
 
         return Ambiente.largura - DISTANCIA_POSICAO_DEFENSIVA_DO_GOL;
+    }
+
+    private void manterPosicaoOfensiva() {
+        temAlvoInterceptacao = false;
+        Movimento.mover(estado, getPosicaoOfensivaX(), Ambiente.golY);
+    }
+
+    private double getPosicaoOfensivaX() {
+        // Espelho da posicao defensiva: avancada, perto do gol que o jogador ataca.
+        if (golX == 0) {
+            return DISTANCIA_POSICAO_OFENSIVA_DO_GOL;
+        }
+
+        return Ambiente.largura - DISTANCIA_POSICAO_OFENSIVA_DO_GOL;
     }
 
     private double[] calcularPontoIntercepcao(JogadorEstado alvo) {

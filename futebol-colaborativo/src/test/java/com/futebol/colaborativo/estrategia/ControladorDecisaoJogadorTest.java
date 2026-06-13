@@ -71,6 +71,73 @@ class ControladorDecisaoJogadorTest {
         assertEquals(TipoDecisao.PERSEGUIR_BOLA, decisao);
     }
 
+    @Test
+    void zagueiroMantemPosicaoQuandoBolaEstaNoCampoAdversario() {
+        // Jogador ataca o gol direito (golX=100) e defende o esquerdo (x=0).
+        // Bola em x=90 => esta no campo adversario.
+        posicionarBola(90, 30);
+        JogadorEstado estadoAtual = criarEstado(10, 30, false);
+        estadoAtual.golX = Ambiente.largura;
+        // 50 cai fora da fatia de peso 5 do PERSEGUIR_BOLA em qualquer ordenacao
+        // do Map, garantindo MANTER_POSICAO_DEFENSIVA de forma deterministica.
+        ControladorDecisaoJogador controlador = criarControlador(50);
+
+        TipoDecisao decisao = controlador.decidir(
+                criarContexto(estadoAtual, null, 0, PapelJogador.ZAGUEIRO));
+
+        assertEquals(TipoDecisao.MANTER_POSICAO_DEFENSIVA, decisao);
+    }
+
+    @Test
+    void atacanteMantemPosicaoOfensivaQuandoBolaEstaNoCampoProprio() {
+        // Jogador ataca o gol direito (golX=100) e defende o esquerdo (x=0).
+        // Bola em x=10 => esta no campo proprio.
+        posicionarBola(10, 30);
+        JogadorEstado estadoAtual = criarEstado(90, 30, false);
+        estadoAtual.golX = Ambiente.largura;
+        // 50 cai fora da fatia de peso 10 do PERSEGUIR_BOLA em qualquer ordenacao
+        // do Map, garantindo MANTER_POSICAO_OFENSIVA de forma deterministica.
+        ControladorDecisaoJogador controlador = criarControlador(50);
+
+        TipoDecisao decisao = controlador.decidir(
+                criarContexto(estadoAtual, null, 0, PapelJogador.ATACANTE));
+
+        assertEquals(TipoDecisao.MANTER_POSICAO_OFENSIVA, decisao);
+    }
+
+    @Test
+    void zonaTemPrioridadeSobreForcarPorTicks() {
+        // Mesmo apos muitos ticks, atacante com bola no campo proprio nao e
+        // forcado a perseguir: a regra de zona vence o force por ticks.
+        posicionarBola(10, 30);
+        JogadorEstado estadoAtual = criarEstado(90, 30, false);
+        estadoAtual.golX = Ambiente.largura;
+        ControladorDecisaoJogador controlador = criarControlador(50);
+
+        TipoDecisao decisao = controlador.decidir(criarContexto(
+                estadoAtual,
+                null,
+                PerfilTatico.atacante().getTicksBolaLivreParaForcar(),
+                PapelJogador.ATACANTE));
+
+        assertEquals(TipoDecisao.MANTER_POSICAO_OFENSIVA, decisao);
+    }
+
+    @Test
+    void perseguirBolaProximaTemPrioridadeSobreZona() {
+        // Zagueiro com a bola no campo adversario (zona mandaria manter posicao),
+        // mas a bola passa perto dele => vai atras dela.
+        posicionarBola(95, 30);
+        JogadorEstado estadoAtual = criarEstado(90, 30, false);
+        estadoAtual.golX = Ambiente.largura;
+        ControladorDecisaoJogador controlador = criarControlador(50);
+
+        TipoDecisao decisao = controlador.decidir(
+                criarContexto(estadoAtual, null, 0, PapelJogador.ZAGUEIRO));
+
+        assertEquals(TipoDecisao.PERSEGUIR_BOLA, decisao);
+    }
+
     private ControladorDecisaoJogador criarControlador(int valorSorteado) {
         return new ControladorDecisaoJogador(new SeletorDecisaoPonderada(new RandomFixo(valorSorteado)));
     }
@@ -79,11 +146,19 @@ class ControladorDecisaoJogadorTest {
             JogadorEstado estadoAtual,
             JogadorEstado jogadorComBola,
             int ticksBolaLivre) {
+        return criarContexto(estadoAtual, jogadorComBola, ticksBolaLivre, PapelJogador.JOGADOR);
+    }
+
+    private ContextoDecisao criarContexto(
+            JogadorEstado estadoAtual,
+            JogadorEstado jogadorComBola,
+            int ticksBolaLivre,
+            PapelJogador papel) {
         return new ContextoDecisao(
                 "azul",
                 estadoAtual,
                 jogadorComBola,
-                PapelJogador.JOGADOR,
+                papel,
                 Time.AZUL,
                 PerfilTatico.equilibrado(),
                 ticksBolaLivre);

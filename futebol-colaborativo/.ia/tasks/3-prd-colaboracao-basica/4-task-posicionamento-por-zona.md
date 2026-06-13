@@ -1,6 +1,6 @@
 # Task 4: Posicionamento por Zona
 
-> **Status:** pending
+> **Status:** completed
 > **PRD:** `1-prd.md`
 > **TechSpec:** `2-techspec.md`
 > **Depende de:** Task 3 (chute dirigido)
@@ -136,4 +136,18 @@ npm run dev
 
 ## Resultado
 
-_(preencher após execução)_
+- `ContextoDecisao.java`: adicionado campo `bolaNoFieldAdversario` (calculado no
+  construtor a partir de `Ambiente.bola.x` e `estadoAtual.golX`) + getter
+  `isBolaNoFieldAdversario()`. Importado `Ambiente`.
+- `ControladorDecisaoJogador.java`: em `decidirComBolaLivre`, antes do sorteio normal,
+  adicionada a regra: se `papel == ZAGUEIRO` e bola no campo adversario, sorteia com
+  pesos `PERSEGUIR_BOLA=5 / MANTER_POSICAO_DEFENSIVA=95`. Imports `PapelJogador` e `Map`.
+- `JogadorAgent.java`: nenhuma mudanca necessaria (campo calculado dentro do construtor;
+  assinatura inalterada).
+- Adicionado teste `zagueiroMantemPosicaoQuandoBolaEstaNoCampoAdversario`
+  (deterministico via `RandomFixo(50)`, robusto a ordem do `Map.of`).
+- 16 testes passaram (`mvn clean test`), antes eram 15.
+- Nota de comportamento: as regras de override existentes (jogador perto da bola e
+  bola livre por muitos ticks) ainda tem prioridade sobre a regra de zona, conforme
+  o escopo da task (que pedia para alterar apenas o sorteio final).
+- Validacao visual pendente — executar `mvn exec:java` + frontend.

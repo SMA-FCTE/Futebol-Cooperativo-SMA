@@ -1,6 +1,7 @@
 package com.futebol.colaborativo.jogo;
 
 import com.futebol.colaborativo.estrategia.PerfilTatico;
+import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.model.JogadorEstado;
 
 import java.util.Objects;
@@ -14,6 +15,7 @@ public class ContextoDecisao {
     private final Time time;
     private final PerfilTatico perfilTatico;
     private final int ticksBolaLivre;
+    private final boolean bolaNoFieldAdversario;
 
     public ContextoDecisao(
             String nomeJogador,
@@ -30,6 +32,13 @@ public class ContextoDecisao {
         this.time = Objects.requireNonNull(time, "time");
         this.perfilTatico = Objects.requireNonNull(perfilTatico, "perfilTatico");
         this.ticksBolaLivre = Math.max(0, ticksBolaLivre);
+
+        // A bola esta no campo adversario se esta mais perto do gol que este
+        // jogador ataca (estadoAtual.golX) do que do gol que ele defende.
+        double golDefendidoX = estadoAtual.golX == 0 ? Ambiente.largura : 0;
+        double distAteGolAtacado = Math.abs(Ambiente.bola.x - estadoAtual.golX);
+        double distAteGolDefendido = Math.abs(Ambiente.bola.x - golDefendidoX);
+        this.bolaNoFieldAdversario = distAteGolAtacado < distAteGolDefendido;
     }
 
     public String getNomeJogador() {
@@ -58,6 +67,14 @@ public class ContextoDecisao {
 
     public int getTicksBolaLivre() {
         return ticksBolaLivre;
+    }
+
+    public boolean isBolaNoFieldAdversario() {
+        return bolaNoFieldAdversario;
+    }
+
+    public boolean isBolaNoFieldProprio() {
+        return !bolaNoFieldAdversario;
     }
 
     public boolean existeJogadorComBola() {
