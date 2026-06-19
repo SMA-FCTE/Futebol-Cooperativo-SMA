@@ -1,6 +1,7 @@
 package com.futebol.colaborativo.model;
 
 public class JogadorEstado {
+    public String nome;
     public double x;
     public double y;
 
@@ -12,4 +13,6 @@ public class JogadorEstado {
 
     public String time;
     public String papel;
+    public boolean aguardandoPasse;
+    public int ticksCooldownPasse;
 }

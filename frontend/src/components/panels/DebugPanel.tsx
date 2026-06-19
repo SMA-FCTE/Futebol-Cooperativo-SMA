@@ -1,4 +1,5 @@
 import { findBallCarrier } from '../../game/model/gameState'
+import { formatPassRefusalReason, formatPassStatus } from '../../game/model/passDisplay'
 import type { GameEvent } from '../../game/events/gameEvents'
 import type { GameState } from '../../game/model/gameTypes'
 import type { ConnectionStatus } from '../../services/websocket/gameSocket'
@@ -30,6 +31,7 @@ function DebugPanel({
   const ballCarrier = findBallCarrier(gameState.players)
   const playersWithBall = gameState.players.filter((player) => player.comBola)
   const disputa = gameState.disputa
+  const passe = gameState.passe
 
   return (
     <section className="panel debug-panel">
@@ -121,6 +123,48 @@ function DebugPanel({
       </div>
 
       <div className="debug-block">
+        <h3>Ultimo passe</h3>
+        <ul className="debug-list">
+          <li>
+            <span>ID</span>
+            <strong>{passe?.id ?? 'Nenhum'}</strong>
+          </li>
+          <li>
+            <span>Passador</span>
+            <strong>{passe?.passador ?? '-'}</strong>
+          </li>
+          <li>
+            <span>Receptor</span>
+            <strong>{passe?.receptor ?? '-'}</strong>
+          </li>
+          <li>
+            <span>Iniciador</span>
+            <strong>{passe?.iniciador ?? '-'}</strong>
+          </li>
+          <li>
+            <span>Status</span>
+            <strong>{formatPassStatus(passe?.status ?? null)}</strong>
+          </li>
+          <li>
+            <span>Forca</span>
+            <strong>{formatPassForce(passe?.forcaX ?? null, passe?.forcaY ?? null)}</strong>
+          </li>
+          <li>
+            <span>Recebido</span>
+            <strong>{passe ? (passe.recebido ? 'Sim' : 'Nao') : '-'}</strong>
+          </li>
+          <li>
+            <span>Motivo da recusa</span>
+            <strong>{formatPassRefusalReason(passe?.motivoRecusa ?? null)}</strong>
+          </li>
+          <li>
+            <span>Resultado</span>
+            <strong>{passe?.resultado ?? 'Aguardando passe'}</strong>
+          </li>
+        </ul>
+      </div>
+
+      <div className="debug-block">
         <h3>Inicialização por HTTP</h3>
         <ul className="debug-list">
           <li>
@@ -183,6 +227,14 @@ function formatBallPosition(gameState: GameState): string {
   }
 
   return `${gameState.ball.x}, ${gameState.ball.y}`
+}
+
+function formatPassForce(forcaX: number | null, forcaY: number | null): string {
+  if (forcaX === null || forcaY === null) {
+    return 'Ainda nao executado'
+  }
+
+  return `${forcaX.toFixed(2)}, ${forcaY.toFixed(2)}`
 }
 
 export default DebugPanel

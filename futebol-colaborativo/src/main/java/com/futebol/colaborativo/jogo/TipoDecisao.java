@@ -3,6 +3,8 @@ package com.futebol.colaborativo.jogo;
 public enum TipoDecisao {
     PERSEGUIR_BOLA,
     AGIR_COM_BOLA,
+    PASSAR_BOLA,
+    AGUARDAR_SOLICITACAO_PASSE,
     INTERCEPTAR,
     MANTER_POSICAO_DEFENSIVA,
     MANTER_POSICAO_OFENSIVA,

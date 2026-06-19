@@ -43,11 +43,25 @@ export type DisputaBolaState = {
   resultado: string
 }
 
+export type PasseState = {
+  id: string
+  passador: string
+  receptor: string
+  iniciador: string
+  status: string
+  forcaX: number | null
+  forcaY: number | null
+  recebido: boolean
+  motivoRecusa: string | null
+  resultado: string
+}
+
 export type GameState = {
   field: FieldState
   players: PlayerState[]
   ball: BallState | null
   disputa: DisputaBolaState | null
+  passe: PasseState | null
   scoreboard: Scoreboard
   tempo: number | null
   meta: {
@@ -75,6 +89,7 @@ export type LegacyNestedPayload = {
   jogadores?: LegacyNestedPlayersPayload
   bola?: SnapshotBallPayload | null
   disputa?: DisputaBolaPayload | null
+  passe?: PassePayload | null
 }
 
 export type SnapshotPlayerPayload = {
@@ -111,10 +126,24 @@ export type DisputaBolaPayload = {
   resultado?: unknown
 }
 
+export type PassePayload = {
+  id?: unknown
+  passador?: unknown
+  receptor?: unknown
+  iniciador?: unknown
+  status?: unknown
+  forcaX?: unknown
+  forcaY?: unknown
+  recebido?: unknown
+  motivoRecusa?: unknown
+  resultado?: unknown
+}
+
 export type SnapshotPayload = {
   tempo?: unknown
   bola?: SnapshotBallPayload | null
   jogadores?: unknown
   placar?: SnapshotScoreboardPayload
   disputa?: DisputaBolaPayload | null
+  passe?: PassePayload | null
 }

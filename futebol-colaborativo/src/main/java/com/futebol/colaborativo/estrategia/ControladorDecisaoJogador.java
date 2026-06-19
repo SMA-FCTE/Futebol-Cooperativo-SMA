@@ -7,6 +7,7 @@ import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.model.JogadorEstado;
 import com.futebol.colaborativo.movimento.Movimento;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -26,7 +27,7 @@ public class ControladorDecisaoJogador {
         Objects.requireNonNull(contexto, "contexto");
 
         if (contexto.jogadorAtualEstaComBola()) {
-            return TipoDecisao.AGIR_COM_BOLA;
+            return decidirComPosse(contexto);
         }
 
         if (contexto.existeJogadorComBola()) {
@@ -38,6 +39,26 @@ public class ControladorDecisaoJogador {
         }
 
         return TipoDecisao.MANTER_POSICAO;
+    }
+
+    private TipoDecisao decidirComPosse(ContextoDecisao contexto) {
+        if (contexto.isJanelaSolicitacaoPasseAtiva()) {
+            return TipoDecisao.AGUARDAR_SOLICITACAO_PASSE;
+        }
+
+        if (contexto.getPapel() == PapelJogador.ATACANTE) {
+            return TipoDecisao.AGIR_COM_BOLA;
+        }
+
+        if (contexto.getAliadoEmPosicaoDePasse() == null) {
+            return TipoDecisao.AGIR_COM_BOLA;
+        }
+
+        int pesoPasse = 70;
+        Map<TipoDecisao, Integer> pesos = new LinkedHashMap<>();
+        pesos.put(TipoDecisao.PASSAR_BOLA, pesoPasse);
+        pesos.put(TipoDecisao.AGIR_COM_BOLA, 100 - pesoPasse);
+        return seletorDecisao.sortear(pesos);
     }
 
     private TipoDecisao decidirComBolaLivre(ContextoDecisao contexto) {

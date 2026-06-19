@@ -70,7 +70,7 @@ Fazer a simulação parecer mais com futebol visualmente:
 - Quando o atacante aliado não estiver disponível (penalidade, fora de posição), o zagueiro vai buscar.
 
 **Passe com comunicação ACL:**
-- Jogador com bola detecta aliado em posição melhor (mais adiantado no campo).
+- Jogador com bola detecta aliado próximo e disponível para receber.
 - Passador envia mensagem ACL avisando que vai passar (`tipo=passe`).
 - Receptor recebe o aviso, registra que vai receber e se move em direção ao ponto de chegada estimado.
 - Passador chuta a bola fisicamente em direção ao receptor — a bola se move no campo.
@@ -93,26 +93,26 @@ Fazer a simulação parecer mais com futebol visualmente:
 
 - Quando bola livre: vai buscar ativamente.
 - Quando aliado zagueiro tem a bola: se posiciona à frente para receber passe.
-- Quando tem a bola: chuta dirigido ao gol ou passa para aliado adiantado.
+- Quando tem a bola: chuta dirigido ao gol ou passa para aliado próximo.
 
 ### Zagueiro
 
 - Quando bola livre e atacante aliado em campo: mantém posição defensiva.
 - Quando bola livre e atacante aliado indisponível: vai buscar.
-- Quando tem a bola: passa para o atacante aliado se ele estiver à frente; caso contrário, chuta.
+- Quando tem a bola: pode passar para o atacante aliado próximo; caso contrário, chuta.
 
 ---
 
 ## 7. Regra de passe
 
 Passador considera passar quando:
-- Aliado do mesmo time está mais próximo do gol adversário do que o passador.
+- Aliado do mesmo time está dentro do raio de passe.
 - Aliado está dentro de um raio de passe razoável.
 - Aliado não está em penalidade.
 
 A decisão de passar vs chutar é influenciada pelo perfil tático:
 - Atacante: prefere chutar quando próximo do gol; prefere passar quando longe.
-- Zagueiro: prefere passar para o atacante quando ele está à frente.
+- Zagueiro: prefere passar para o atacante quando ele está próximo.
 
 ---
 

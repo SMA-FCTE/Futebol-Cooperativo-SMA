@@ -12,6 +12,7 @@ import type {
   JogadaDisputa,
   LegacyFlatPayload,
   LegacyNestedPayload,
+  PasseState,
   PayloadFormat,
   PlayerState,
   SnapshotPayload,
@@ -54,7 +55,7 @@ export function normalizeLegacyFlatPayload(raw: unknown): NormalizationResult {
   }
 
   const players = Object.entries(raw as LegacyFlatPayload).flatMap(([id, value]) => {
-    if (id === 'bola' || id === 'jogadores' || id === 'disputa') {
+    if (id === 'bola' || id === 'jogadores' || id === 'disputa' || id === 'passe') {
       return []
     }
 
@@ -71,6 +72,7 @@ export function normalizeLegacyFlatPayload(raw: unknown): NormalizationResult {
     players,
     ball: null,
     disputa: normalizeDisputa((raw as { disputa?: unknown }).disputa),
+    passe: normalizePasse((raw as { passe?: unknown }).passe),
     tempo: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
   })
@@ -97,12 +99,14 @@ export function normalizeLegacyNestedPayload(raw: unknown): NormalizationResult 
 
   const ball = normalizeBall(payload.bola, inferPossessorId(players))
   const disputa = normalizeDisputa(payload.disputa)
+  const passe = normalizePasse(payload.passe)
 
   return createSuccess({
     payloadFormat: 'legacy-nested',
     players,
     ball,
     disputa,
+    passe,
     tempo: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
   })
@@ -137,6 +141,7 @@ export function normalizeSnapshotPayload(raw: unknown): NormalizationResult {
         }
       : null,
     disputa: normalizeDisputa(payload.disputa),
+    passe: normalizePasse(payload.passe),
     tempo: coerceNullableNumber(payload.tempo),
     scoreboard: normalizeScoreboard(payload.placar),
   })
@@ -147,6 +152,7 @@ function createSuccess({
   players,
   ball,
   disputa,
+  passe,
   tempo,
   scoreboard,
 }: {
@@ -154,6 +160,7 @@ function createSuccess({
   players: PlayerState[]
   ball: BallState | null
   disputa: DisputaBolaState | null
+  passe: PasseState | null
   tempo: number | null
   scoreboard: { A: number; B: number }
 }): NormalizationSuccess {
@@ -177,6 +184,7 @@ function createSuccess({
           }
         : null,
       disputa,
+      passe,
       tempo,
       scoreboard,
       meta: {
@@ -303,6 +311,35 @@ function normalizeDisputa(value: unknown): DisputaBolaState | null {
     vencedor: coerceNonEmptyString(value.vencedor),
     empate: typeof value.empate === 'boolean' ? value.empate : false,
     resultado: coerceNonEmptyString(value.resultado) ?? 'Disputa em andamento',
+  }
+}
+
+function normalizePasse(value: unknown): PasseState | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const id = coerceNonEmptyString(value.id)
+  const passador = coerceNonEmptyString(value.passador)
+  const receptor = coerceNonEmptyString(value.receptor)
+  const iniciador = coerceNonEmptyString(value.iniciador)
+  const status = coerceNonEmptyString(value.status)
+
+  if (!id || !passador || !receptor || !iniciador || !status) {
+    return null
+  }
+
+  return {
+    id,
+    passador,
+    receptor,
+    iniciador,
+    status,
+    forcaX: coerceNullableNumber(value.forcaX),
+    forcaY: coerceNullableNumber(value.forcaY),
+    recebido: typeof value.recebido === 'boolean' ? value.recebido : false,
+    motivoRecusa: coerceNonEmptyString(value.motivoRecusa),
+    resultado: coerceNonEmptyString(value.resultado) ?? 'Passe em andamento',
   }
 }
 

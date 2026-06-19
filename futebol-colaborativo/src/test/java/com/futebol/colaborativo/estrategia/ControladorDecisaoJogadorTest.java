@@ -25,6 +25,68 @@ class ControladorDecisaoJogadorTest {
     }
 
     @Test
+    void aguardaSolicitacaoDuranteDoisTicksEVoltaADecisaoNormal() {
+        JogadorEstado estadoAtual = criarEstado(10, 10, true);
+        ControladorDecisaoJogador controlador = criarControlador(85);
+
+        TipoDecisao primeiroTick = controlador.decidir(criarContexto(
+                estadoAtual,
+                null,
+                0,
+                PapelJogador.JOGADOR,
+                null,
+                2));
+        TipoDecisao segundoTick = controlador.decidir(criarContexto(
+                estadoAtual,
+                null,
+                0,
+                PapelJogador.JOGADOR,
+                null,
+                1));
+        TipoDecisao depoisDaJanela = controlador.decidir(criarContexto(
+                estadoAtual,
+                null,
+                0,
+                PapelJogador.JOGADOR,
+                null,
+                0));
+
+        assertEquals(TipoDecisao.AGUARDAR_SOLICITACAO_PASSE, primeiroTick);
+        assertEquals(TipoDecisao.AGUARDAR_SOLICITACAO_PASSE, segundoTick);
+        assertEquals(TipoDecisao.AGIR_COM_BOLA, depoisDaJanela);
+    }
+
+    @Test
+    void zagueiroPodeEscolherPasseQuandoAliadoEstaAdiantado() {
+        JogadorEstado estadoAtual = criarEstado(20, 30, true);
+        ControladorDecisaoJogador controlador = criarControlador(0);
+
+        TipoDecisao decisao = controlador.decidir(criarContexto(
+                estadoAtual,
+                null,
+                0,
+                PapelJogador.ZAGUEIRO,
+                "atacante"));
+
+        assertEquals(TipoDecisao.PASSAR_BOLA, decisao);
+    }
+
+    @Test
+    void atacanteNaoPassaMesmoComAliadoDisponivel() {
+        JogadorEstado estadoAtual = criarEstado(20, 30, true);
+        ControladorDecisaoJogador controlador = criarControlador(0);
+
+        TipoDecisao decisao = controlador.decidir(criarContexto(
+                estadoAtual,
+                null,
+                0,
+                PapelJogador.ATACANTE,
+                "zagueiro"));
+
+        assertEquals(TipoDecisao.AGIR_COM_BOLA, decisao);
+    }
+
+    @Test
     void retornaInterceptarQuandoOutroJogadorEstaComBola() {
         JogadorEstado estadoAtual = criarEstado(10, 10, false);
         JogadorEstado outroJogadorComBola = criarEstado(20, 20, true);
@@ -154,6 +216,27 @@ class ControladorDecisaoJogadorTest {
             JogadorEstado jogadorComBola,
             int ticksBolaLivre,
             PapelJogador papel) {
+        return criarContexto(estadoAtual, jogadorComBola, ticksBolaLivre, papel, null);
+    }
+
+    private ContextoDecisao criarContexto(
+            JogadorEstado estadoAtual,
+            JogadorEstado jogadorComBola,
+            int ticksBolaLivre,
+            PapelJogador papel,
+            String aliadoEmPosicaoDePasse) {
+        return criarContexto(
+                estadoAtual, jogadorComBola, ticksBolaLivre, papel,
+                aliadoEmPosicaoDePasse, 0);
+    }
+
+    private ContextoDecisao criarContexto(
+            JogadorEstado estadoAtual,
+            JogadorEstado jogadorComBola,
+            int ticksBolaLivre,
+            PapelJogador papel,
+            String aliadoEmPosicaoDePasse,
+            int ticksJanelaSolicitacaoPasseRestantes) {
         return new ContextoDecisao(
                 "azul",
                 estadoAtual,
@@ -161,7 +244,9 @@ class ControladorDecisaoJogadorTest {
                 papel,
                 Time.AZUL,
                 PerfilTatico.equilibrado(),
-                ticksBolaLivre);
+                ticksBolaLivre,
+                aliadoEmPosicaoDePasse,
+                ticksJanelaSolicitacaoPasseRestantes);
     }
 
     private JogadorEstado criarEstado(double x, double y, boolean comBola) {

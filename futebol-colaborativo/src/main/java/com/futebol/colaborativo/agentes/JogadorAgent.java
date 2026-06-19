@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class JogadorAgent extends Agent {
 
     static final String CONVERSA_ID_DISPUTA = "disputa-bola";
+    static final String CONVERSA_ID_PASSE = "passe-bola";
     private static final boolean USAR_CHUTE_ALEATORIO_TESTE = true;
     private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 20;
     private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
@@ -38,7 +39,14 @@ public class JogadorAgent extends Agent {
     // Mais distante do gol que a posicao defensiva: o atacante espera proximo ao
     // meio-campo, sem se sobrepor ao zagueiro adversario (que fica colado no gol).
     private static final double DISTANCIA_POSICAO_OFENSIVA_DO_GOL = 35.0;
+    private static final double FORCA_PASSE = 1.0;
+    private static final int TICKS_COOLDOWN_PASSE = 10;
+    private static final int TICKS_TIMEOUT_NEGOCIACAO_PASSE = 10;
+    private static final int TICKS_TIMEOUT_RECEPCAO_PASSE = 45;
+    private static final int TICKS_JANELA_SOLICITACAO_PASSE = 2;
+    private static final int TICKS_BACKOFF_SOLICITACAO_PASSE = 5;
     private static final AtomicLong CONTADOR_DISPUTAS = new AtomicLong(); // Garante que dois agentes não iniciem disputa com o mesmo ID
+    private static final AtomicLong CONTADOR_PASSES = new AtomicLong();
 
     private JogadorEstado estado;
     private SistemaFutebol sistema;
@@ -70,6 +78,18 @@ public class JogadorAgent extends Agent {
     private int ticksPenalidadePerderDisputaRestantes = 0;
     private final Random random = new Random(); // Para sortear jogadas
 
+    // Atributos de passe
+    private boolean passePendente = false;
+    private String passeIdPendente;
+    private String receptorPassePendente;
+    private int ticksPassePendenteRestantes = 0;
+    private boolean aguardandoPasse = false;
+    private String passeIdAguardado;
+    private int ticksAguardandoPasseRestantes = 0;
+    private int ticksCooldownPasse = 0;
+    private int ticksJanelaSolicitacaoPasseRestantes = 0;
+    private int ticksBackoffSolicitacaoPasseRestantes = 0;
+
     @Override
     protected void setup() {
 
@@ -96,6 +116,7 @@ public class JogadorAgent extends Agent {
         controladorDecisao = new ControladorDecisaoJogador();
 
         estado = new JogadorEstado();
+        estado.nome = getLocalName();
         estado.x = xInicial;
         estado.y = yInicial;
         estado.golX = golX;
@@ -115,6 +136,21 @@ public class JogadorAgent extends Agent {
                 }
 
                 processarMensagemDisputa(mensagem); // Se chegou mensagem, envia para o método que trata a disputa
+            }
+        });
+
+        addBehaviour(new CyclicBehaviour() {
+            @Override
+            public void action() {
+                MessageTemplate mensagemTemplate = MessageTemplate.MatchConversationId(CONVERSA_ID_PASSE);
+                ACLMessage mensagem = myAgent.receive(mensagemTemplate);
+
+                if (mensagem == null) {
+                    block();
+                    return;
+                }
+
+                processarMensagemPasse(mensagem);
             }
         });
 
@@ -142,6 +178,8 @@ public class JogadorAgent extends Agent {
     }
 
     private void decidirAcaoPrincipal() {
+        atualizarTemporizadoresPasse();
+
         if (estaEmPenalidade()) {
             reduzirPenalidade();
             return;
@@ -149,6 +187,11 @@ public class JogadorAgent extends Agent {
 
         if (disputaEmAndamento) {
             printTerminalEstado();
+            return;
+        }
+
+        if (passePendente) {
+            atualizarEstado();
             return;
         }
 
@@ -166,6 +209,13 @@ public class JogadorAgent extends Agent {
     private ContextoDecisao montarContextoDecisao() {
         JogadorEstado jogadorComBola = sistema == null ? null : sistema.getJogadorComBola();
         atualizarContadorBolaLivre(jogadorComBola);
+        String aliadoEmPosicaoDePasse = null;
+
+        if (sistema != null && estado.comBola && ticksCooldownPasse == 0) {
+            aliadoEmPosicaoDePasse = sistema
+                    .localizarAliadoEmPosicaoDePasse(getLocalName(), estado, time)
+                    .orElse(null);
+        }
 
         return new ContextoDecisao(
                 getLocalName(),
@@ -174,7 +224,9 @@ public class JogadorAgent extends Agent {
                 papel,
                 time,
                 perfilTatico,
-                ticksBolaLivre);
+                ticksBolaLivre,
+                aliadoEmPosicaoDePasse,
+                ticksJanelaSolicitacaoPasseRestantes);
     }
 
     private void atualizarContadorBolaLivre(JogadorEstado jogadorComBola) {
@@ -194,9 +246,17 @@ public class JogadorAgent extends Agent {
             case AGIR_COM_BOLA:
                 agirComBola();
                 break;
+            case PASSAR_BOLA:
+                proporPasse(contexto.getAliadoEmPosicaoDePasse());
+                break;
+            case AGUARDAR_SOLICITACAO_PASSE:
+                aguardarSolicitacaoPasse();
+                break;
             case INTERCEPTAR:
                 if (contexto.getJogadorComBola() == null) {
                     manterPosicaoDefensiva();
+                } else if (ehAliado(contexto.getJogadorComBola())) {
+                    agirQuandoAliadoEstaComBola(contexto.getJogadorComBola());
                 } else {
                     agirSemBola(contexto.getJogadorComBola());
                 }
@@ -246,6 +306,361 @@ public class JogadorAgent extends Agent {
         }
 
         irParaPontoInterceptacao();
+    }
+
+    private void agirQuandoAliadoEstaComBola(JogadorEstado aliadoComBola) {
+        temAlvoInterceptacao = false;
+
+        if (papel == PapelJogador.ATACANTE
+                && !aguardandoPasse
+                && ticksCooldownPasse == 0
+                && ticksBackoffSolicitacaoPasseRestantes == 0) {
+            solicitarPasse(aliadoComBola);
+        }
+
+        if (papel == PapelJogador.ATACANTE) {
+            manterPosicaoOfensiva();
+        } else {
+            manterPosicaoDefensiva();
+        }
+    }
+
+    private void aguardarSolicitacaoPasse() {
+        temAlvoInterceptacao = false;
+    }
+
+    private boolean ehAliado(JogadorEstado outroJogador) {
+        return outroJogador != null && time.name().equals(outroJogador.time);
+    }
+
+    private void processarMensagemPasse(ACLMessage mensagem) {
+        switch (mensagem.getPerformative()) {
+            case ACLMessage.REQUEST:
+                receberPedidoPasse(mensagem);
+                break;
+            case ACLMessage.INFORM:
+                receberAvisoPasse(mensagem);
+                break;
+            case ACLMessage.AGREE:
+                receberConfirmacaoPasse(mensagem);
+                break;
+            case ACLMessage.REFUSE:
+                receberRecusaPasse(mensagem);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void solicitarPasse(JogadorEstado aliado) {
+        if (papel == PapelJogador.ZAGUEIRO
+                || aliado == null
+                || aliado.nome == null
+                || aguardandoPasse
+                || ticksCooldownPasse > 0
+                || ticksBackoffSolicitacaoPasseRestantes > 0) {
+            return;
+        }
+
+        String passeId = novoPasseId();
+        iniciarEsperaPasse(passeId);
+
+        if (sistema != null) {
+            sistema.registrarInicioPasse(passeId, aliado.nome, getLocalName(), getLocalName());
+        }
+
+        ACLMessage pedido = new ACLMessage(ACLMessage.REQUEST);
+        pedido.addReceiver(new AID(aliado.nome, AID.ISLOCALNAME));
+        pedido.setConversationId(CONVERSA_ID_PASSE);
+        pedido.setContent("id=" + passeId + ";tipo=passe;solicitante=" + getLocalName());
+        send(pedido);
+
+        System.out.printf("[%s] solicitando passe de %s%n", getLocalName(), aliado.nome);
+    }
+
+    private void proporPasse(String nomeReceptor) {
+        if (papel == PapelJogador.ATACANTE
+                || nomeReceptor == null
+                || passePendente
+                || !estado.comBola) {
+            agirComBola();
+            return;
+        }
+
+        passePendente = true;
+        passeIdPendente = novoPasseId();
+        receptorPassePendente = nomeReceptor;
+        ticksPassePendenteRestantes = TICKS_TIMEOUT_NEGOCIACAO_PASSE;
+
+        if (sistema != null) {
+            sistema.registrarInicioPasse(
+                    passeIdPendente, getLocalName(), nomeReceptor, getLocalName());
+        }
+
+        ACLMessage aviso = new ACLMessage(ACLMessage.INFORM);
+        aviso.addReceiver(new AID(nomeReceptor, AID.ISLOCALNAME));
+        aviso.setConversationId(CONVERSA_ID_PASSE);
+        aviso.setContent("id=" + passeIdPendente + ";tipo=passe;passador=" + getLocalName());
+        send(aviso);
+
+        System.out.printf("[%s] propondo passe para %s%n", getLocalName(), nomeReceptor);
+    }
+
+    private void receberPedidoPasse(ACLMessage mensagem) {
+        if (passePendente) {
+            return;
+        }
+
+        String solicitante = mensagem.getSender().getLocalName();
+        String passeId = parseConteudo(mensagem.getContent()).get("id");
+        if (passeId == null) {
+            passeId = novoPasseId();
+        }
+        String motivoRecusa = identificarMotivoRecusaPedido(solicitante);
+        if (motivoRecusa != null) {
+            if (sistema != null) {
+                sistema.registrarPasseRecusado(passeId, getLocalName(), motivoRecusa);
+            }
+            responderPasse(
+                    mensagem,
+                    ACLMessage.REFUSE,
+                    "id=" + passeId + ";motivo=" + motivoRecusa);
+            return;
+        }
+
+        responderPasse(
+                mensagem,
+                ACLMessage.AGREE,
+                "id=" + passeId + ";tipo=passe;passador=" + getLocalName());
+        passePendente = true;
+        passeIdPendente = passeId;
+        receptorPassePendente = solicitante;
+        executarPasse(solicitante);
+    }
+
+    private void receberAvisoPasse(ACLMessage mensagem) {
+        String passador = mensagem.getSender().getLocalName();
+        String passeId = parseConteudo(mensagem.getContent()).get("id");
+        if (passeId == null) {
+            passeId = novoPasseId();
+        }
+        JogadorEstado estadoPassador = sistema == null ? null : sistema.getEstado(passador);
+        String motivoRecusa = identificarMotivoRecusaAviso(estadoPassador);
+
+        if (motivoRecusa != null) {
+            if (sistema != null) {
+                sistema.registrarPasseRecusado(passeId, getLocalName(), motivoRecusa);
+            }
+            responderPasse(
+                    mensagem,
+                    ACLMessage.REFUSE,
+                    "id=" + passeId + ";motivo=" + motivoRecusa);
+            return;
+        }
+
+        iniciarEsperaPasse(passeId);
+        responderPasse(
+                mensagem,
+                ACLMessage.AGREE,
+                "id=" + passeId + ";tipo=passe;receptor=" + getLocalName());
+    }
+
+    private void receberConfirmacaoPasse(ACLMessage mensagem) {
+        String receptor = mensagem.getSender().getLocalName();
+        if (!passePendente || !receptor.equals(receptorPassePendente)) {
+            return;
+        }
+
+        executarPasse(receptor);
+    }
+
+    private void receberRecusaPasse(ACLMessage mensagem) {
+        String remetente = mensagem.getSender().getLocalName();
+        Map<String, String> dados = parseConteudo(mensagem.getContent());
+        String passeId = dados.get("id");
+        String motivoRecusa = dados.getOrDefault("motivo", "MOTIVO_NAO_INFORMADO");
+
+        if (sistema != null && passeId != null) {
+            sistema.registrarPasseRecusado(passeId, remetente, motivoRecusa);
+        }
+
+        if (passePendente
+                && passeId != null
+                && passeId.equals(passeIdPendente)
+                && remetente.equals(receptorPassePendente)) {
+            limparPassePendente();
+        }
+
+        if (aguardandoPasse && passeId != null && passeId.equals(passeIdAguardado)) {
+            finalizarEsperaPasse(false);
+        }
+    }
+
+    private String identificarMotivoRecusaPedido(String solicitante) {
+        if (papel == PapelJogador.ATACANTE) {
+            return "ATACANTE_NAO_PASSA_BOLA";
+        }
+        if (!estado.comBola) {
+            return "POSSE_ALTERADA_ANTES_DA_RESPOSTA";
+        }
+        if (sistema == null) {
+            return "SISTEMA_INDISPONIVEL";
+        }
+
+        return sistema.identificarMotivoReceptorPasse(
+                getLocalName(), estado, time, solicitante);
+    }
+
+    private String identificarMotivoRecusaAviso(JogadorEstado estadoPassador) {
+        if (!ehAliado(estadoPassador)) {
+            return "PASSADOR_NAO_E_ALIADO";
+        }
+        if (estaEmPenalidade()) {
+            return "RECEPTOR_EM_PENALIDADE";
+        }
+        if (ticksCooldownPasse > 0) {
+            return "RECEPTOR_EM_COOLDOWN";
+        }
+
+        return null;
+    }
+
+    private void responderPasse(ACLMessage mensagem, int performative, String conteudo) {
+        ACLMessage resposta = mensagem.createReply();
+        resposta.setPerformative(performative);
+        resposta.setConversationId(CONVERSA_ID_PASSE);
+        resposta.setContent(conteudo);
+        send(resposta);
+    }
+
+    private void executarPasse(String nomeReceptor) {
+        if (papel == PapelJogador.ATACANTE) {
+            limparPassePendente();
+            return;
+        }
+
+        JogadorEstado receptor = sistema == null ? null : sistema.getEstado(nomeReceptor);
+        if (receptor == null || !estado.comBola || !ehAliado(receptor)) {
+            limparPassePendente();
+            return;
+        }
+
+        double dx = receptor.x - estado.x;
+        double dy = receptor.y - estado.y;
+        double distancia = Math.sqrt(dx * dx + dy * dy);
+        if (distancia == 0) {
+            distancia = 1;
+        }
+
+        double forcaX = (dx / distancia) * FORCA_PASSE;
+        double forcaY = (dy / distancia) * FORCA_PASSE;
+
+        liberarPosseAntesDoChute();
+        String passeId = passeIdPendente == null ? novoPasseId() : passeIdPendente;
+        limparPassePendente();
+
+        ACLMessage chute = new ACLMessage(ACLMessage.INFORM);
+        chute.addReceiver(new AID("bola", AID.ISLOCALNAME));
+        chute.setContent(forcaX + "," + forcaY);
+        send(chute);
+
+        if (sistema != null) {
+            sistema.registrarPasseExecutado(
+                    passeId, getLocalName(), nomeReceptor, forcaX, forcaY);
+        }
+
+        System.out.printf("[%s] passe para %s | forca=(%.2f, %.2f)%n",
+                getLocalName(), nomeReceptor, forcaX, forcaY);
+    }
+
+    private void iniciarEsperaPasse(String passeId) {
+        aguardandoPasse = true;
+        passeIdAguardado = passeId;
+        estado.aguardandoPasse = true;
+        ticksAguardandoPasseRestantes = TICKS_TIMEOUT_RECEPCAO_PASSE;
+        atualizarEstado();
+    }
+
+    private void finalizarEsperaPasse(boolean recebeuPasse) {
+        String passeId = passeIdAguardado;
+        aguardandoPasse = false;
+        passeIdAguardado = null;
+        estado.aguardandoPasse = false;
+        ticksAguardandoPasseRestantes = 0;
+
+        if (recebeuPasse) {
+            ticksCooldownPasse = TICKS_COOLDOWN_PASSE;
+            estado.ticksCooldownPasse = ticksCooldownPasse;
+
+            if (sistema != null && passeId != null) {
+                sistema.registrarPasseRecebido(passeId, getLocalName());
+            }
+        } else {
+            ticksBackoffSolicitacaoPasseRestantes = TICKS_BACKOFF_SOLICITACAO_PASSE;
+        }
+    }
+
+    private void registrarRecebimentoPasseSeNecessario() {
+        if (aguardandoPasse) {
+            finalizarEsperaPasse(true);
+        }
+    }
+
+    private void limparPassePendente() {
+        passePendente = false;
+        passeIdPendente = null;
+        receptorPassePendente = null;
+        ticksPassePendenteRestantes = 0;
+    }
+
+    private void atualizarTemporizadoresPasse() {
+        if (ticksCooldownPasse > 0) {
+            ticksCooldownPasse--;
+            estado.ticksCooldownPasse = ticksCooldownPasse;
+        }
+
+        if (ticksBackoffSolicitacaoPasseRestantes > 0) {
+            ticksBackoffSolicitacaoPasseRestantes--;
+        }
+
+        if (ticksJanelaSolicitacaoPasseRestantes > 0) {
+            ticksJanelaSolicitacaoPasseRestantes--;
+        }
+
+        if (passePendente && --ticksPassePendenteRestantes <= 0) {
+            if (sistema != null && passeIdPendente != null) {
+                sistema.registrarPasseExpirado(passeIdPendente);
+            }
+            limparPassePendente();
+        }
+
+        if (aguardandoPasse && --ticksAguardandoPasseRestantes <= 0) {
+            if (sistema != null && passeIdAguardado != null) {
+                sistema.registrarPasseExpirado(passeIdAguardado);
+            }
+            finalizarEsperaPasse(false);
+        }
+    }
+
+    private String novoPasseId() {
+        return "passe-" + CONTADOR_PASSES.incrementAndGet();
+    }
+
+    private void iniciarJanelaSolicitacaoPasse() {
+        ticksJanelaSolicitacaoPasseRestantes = ticksCooldownPasse == 0
+                ? TICKS_JANELA_SOLICITACAO_PASSE
+                : 0;
+    }
+
+    private void liberarPosseAntesDoChute() {
+        estado.comBola = false;
+        ticksJanelaSolicitacaoPasseRestantes = 0;
+
+        if (sistema != null) {
+            sistema.liberarPosseBola(getLocalName());
+        } else if (getLocalName().equals(Ambiente.bola.emPosseDe)) {
+            Ambiente.bola.emPosseDe = null;
+        }
     }
 
     // ----------------------------------------------- FIM - FUNCOES UTILIZADAS NO AGENTE -----------------------------------------------
@@ -492,6 +907,8 @@ public class JogadorAgent extends Agent {
         if (venceu) {
             estado.comBola = true;
             temAlvoInterceptacao = false;
+            registrarRecebimentoPasseSeNecessario();
+            iniciarJanelaSolicitacaoPasse();
 
             if (sistema != null) {
                 sistema.definirPosseBola(getLocalName());
@@ -501,6 +918,7 @@ public class JogadorAgent extends Agent {
             }
         } else if (perdeu) {
             estado.comBola = false;
+            ticksJanelaSolicitacaoPasseRestantes = 0;
             temAlvoInterceptacao = false;
             ticksPenalidadePerderDisputaRestantes = TICKS_PENALIDADE_PERDER_DISPUTA;
             estado.ticksPenalidadePerderDisputaRestantes = ticksPenalidadePerderDisputaRestantes;
@@ -582,6 +1000,8 @@ public class JogadorAgent extends Agent {
 
         if (tocouNaBola()) {
             estado.comBola = true;
+            registrarRecebimentoPasseSeNecessario();
+            iniciarJanelaSolicitacaoPasse();
             if (sistema != null) {
                 sistema.definirPosseBola(getLocalName());
             } else {
@@ -638,16 +1058,12 @@ public class JogadorAgent extends Agent {
         double forcaX = (deltaX / distancia) * FORCA_CHUTE;
         double forcaY = (deltaY / distancia) * FORCA_CHUTE;
 
-        estado.comBola = false;
+        liberarPosseAntesDoChute();
 
         ACLMessage chute = new ACLMessage(ACLMessage.INFORM);
         chute.addReceiver(new AID("bola", AID.ISLOCALNAME));
         chute.setContent(forcaX + "," + forcaY);
         send(chute);
-
-        if (sistema != null) {
-            sistema.atualizarEstado(getLocalName(), estado);
-        }
 
         System.out.printf("[%s] chutou para o gol com forca (%.2f, %.2f)%n", getLocalName(), forcaX, forcaY);
     }
@@ -660,16 +1076,12 @@ public class JogadorAgent extends Agent {
         double forcaX = Math.cos(anguloFinal) * FORCA_CHUTE_DIRIGIDO;
         double forcaY = Math.sin(anguloFinal) * FORCA_CHUTE_DIRIGIDO;
 
-        estado.comBola = false;
+        liberarPosseAntesDoChute();
 
         ACLMessage chute = new ACLMessage(ACLMessage.INFORM);
         chute.addReceiver(new AID("bola", AID.ISLOCALNAME));
         chute.setContent(forcaX + "," + forcaY);
         send(chute);
-
-        if (sistema != null) {
-            sistema.atualizarEstado(getLocalName(), estado);
-        }
 
         System.out.printf("[%s] chute dirigido | angulo_base=%.0f° | desvio=%.0f° | forca=(%.2f, %.2f)%n",
                 getLocalName(),

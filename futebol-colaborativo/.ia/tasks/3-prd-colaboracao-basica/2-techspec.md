@@ -125,7 +125,8 @@ O `ControladorDecisaoJogador` usa esse campo para ajustar os pesos.
 
 ### 4.1. Princípios do design
 
-- Dois iniciadores: o atacante pode pedir o passe, e o zagueiro pode decidir passar sozinho.
+- O atacante pode pedir o passe, mas nunca passa a bola quando ganha a posse.
+- O zagueiro pode decidir passar sozinho, mas nunca envia pedidos de passe.
 - A bola se move fisicamente no campo — sem teletransporte. O mecanismo é o mesmo do chute.
 - O passador mira na **posição atual do receptor no momento do chute**.
   - O receptor continua se movendo durante a negociação — o passe pode errar (comportamento realista).
@@ -177,17 +178,18 @@ public boolean aguardandoPasse;   // visível no frontend para debug
 
 ### 4.4. Força do passe
 
-O passador calcula a força baseada na distância ao receptor:
+O passador normaliza o vetor até o receptor e aplica uma força fixa:
 
 ```text
 distancia = calcularDistancia(passador.x, passador.y, receptor.x, receptor.y)
-forca = distancia / TICKS_VIAGEM_PASSE
+forcaX = (deltaX / distancia) * FORCA_PASSE
+forcaY = (deltaY / distancia) * FORCA_PASSE
 ```
 
 | Constante | Valor proposto | Justificativa |
 |-----------|---------------|---------------|
-| `TICKS_VIAGEM_PASSE` | `15` | Bola chega em ~15 ticks; tempo suficiente para receptor se posicionar |
-| `RAIO_PASSE` | `30.0` | Distância máxima para considerar passe viável |
+| `FORCA_PASSE` | `1.0` | Mantém velocidade uniforme, independentemente da distância |
+| `RAIO_PASSE` | `20.0` | Distância máxima para considerar passe viável |
 | `TICKS_COOLDOWN_PASSE` | `10` | Evita loop imediato de passes entre os dois aliados |
 
 ### 4.5. Detecção de aliado em posição de passe
@@ -201,7 +203,6 @@ public Optional<String> localizarAliadoEmPosicaoDePasse(
 
 Critérios para um aliado ser candidato ao passe:
 - Pertence ao mesmo `time`.
-- Está mais próximo de `golX` do passador do que o próprio passador (está à frente no ataque).
 - Está dentro de `RAIO_PASSE`.
 - Não está em penalidade (`ticksPenalidadePerderDisputaRestantes == 0`).
 - Não está em `ticksCooldownPasse > 0`.
@@ -216,10 +217,10 @@ Em `ControladorDecisaoJogador`, quando `eu_com_bola` e aliado em posição de pa
 
 | Papel | Probab. de passar | Probab. de chutar |
 |-------|-------------------|-------------------|
-| Atacante | 30% | 70% |
+| Atacante | 0% | 100% |
 | Zagueiro | 70% | 30% |
 
-Quando nenhum aliado disponível: chuta (comportamento atual).
+Quando nenhum aliado disponível: age com a bola (comportamento atual).
 
 ### 4.8. Arquivos alterados
 
@@ -251,8 +252,8 @@ Quando nenhum aliado disponível: chuta (comportamento atual).
 
 Mirar na posição atual do receptor no momento do chute é mais simples, produz
 comportamento realista (o passe às vezes erra) e é suficiente para a primeira
-implementação. A predição de trajetória (calcular onde o receptor vai estar em
-`TICKS_VIAGEM_PASSE` ticks) é uma melhoria futura deliberadamente deixada para
+implementação. A predição de trajetória (calcular onde o receptor vai estar ao
+fim do deslocamento da bola) é uma melhoria futura deliberadamente deixada para
 fora deste PRD — pode ser implementada como aprimoramento de perfil (receptores
 mais "avançados" fazem passes com predição).
 

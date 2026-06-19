@@ -5,13 +5,16 @@ import jade.wrapper.AgentController;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 
 import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
 import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.dto.DisputaBolaEstadoDTO;
+import com.futebol.colaborativo.dto.PasseEstadoDTO;
 import com.futebol.colaborativo.jogo.ConfiguracaoJogador;
+import com.futebol.colaborativo.jogo.Time;
 import com.futebol.colaborativo.model.JogadorEstado;
 
 public class SistemaFutebol {
@@ -20,6 +23,7 @@ public class SistemaFutebol {
     private static final double VELOCIDADE_MINIMA_BOLA = 0.02;
     private static final double RESTITUICAO_BORDA = 0.82;
     private static final double RAIO_GOL = 2.4;
+    private static final double RAIO_PASSE = 100.0;
 
     private final AgentContainer container;
 
@@ -28,6 +32,7 @@ public class SistemaFutebol {
     private final Map<String, JogadorEstado> estados = new HashMap<>();
     private final Map<String, ConfiguracaoJogador> configuracoes = new HashMap<>();
     private DisputaBolaEstadoDTO ultimaDisputa = null;
+    private PasseEstadoDTO ultimoPasse = null;
 
     private static final Gson gson = new Gson();
 
@@ -100,6 +105,81 @@ public class SistemaFutebol {
         return null;
     }
 
+    public synchronized JogadorEstado getEstado(String nomeJogador) {
+        return estados.get(nomeJogador);
+    }
+
+    public synchronized Optional<String> localizarAliadoEmPosicaoDePasse(
+            String nomeJogador,
+            JogadorEstado estadoAtual,
+            Time time) {
+        if (nomeJogador == null || estadoAtual == null || time == null) {
+            return Optional.empty();
+        }
+
+        String melhorAliado = null;
+        double menorDistancia = Double.MAX_VALUE;
+
+        for (Map.Entry<String, JogadorEstado> entry : estados.entrySet()) {
+            String nomeCandidato = entry.getKey();
+            JogadorEstado candidato = entry.getValue();
+
+            if (identificarMotivoReceptorPasse(
+                    nomeJogador, estadoAtual, time, nomeCandidato, candidato) != null) {
+                continue;
+            }
+
+            double deltaX = candidato.x - estadoAtual.x;
+            double deltaY = candidato.y - estadoAtual.y;
+            double distanciaPasse = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            if (distanciaPasse > RAIO_PASSE || distanciaPasse >= menorDistancia) {
+                continue;
+            }
+
+            melhorAliado = nomeCandidato;
+            menorDistancia = distanciaPasse;
+        }
+
+        return Optional.ofNullable(melhorAliado);
+    }
+
+    public synchronized String identificarMotivoReceptorPasse(
+            String nomeJogador,
+            JogadorEstado estadoAtual,
+            Time time,
+            String nomeReceptor) {
+        return identificarMotivoReceptorPasse(
+                nomeJogador, estadoAtual, time, nomeReceptor, estados.get(nomeReceptor));
+    }
+
+    private String identificarMotivoReceptorPasse(
+            String nomeJogador,
+            JogadorEstado estadoAtual,
+            Time time,
+            String nomeReceptor,
+            JogadorEstado receptor) {
+        if (receptor == null) {
+            return "RECEPTOR_NAO_ENCONTRADO";
+        }
+        if (nomeJogador.equals(nomeReceptor)) {
+            return "MESMO_JOGADOR";
+        }
+        if (!time.name().equals(receptor.time)) {
+            return "RECEPTOR_OUTRO_TIME";
+        }
+        if (estaEmPenalidade(receptor)) {
+            return "RECEPTOR_EM_PENALIDADE";
+        }
+        if (receptor.ticksCooldownPasse > 0) {
+            return "RECEPTOR_EM_COOLDOWN";
+        }
+
+        double deltaX = receptor.x - estadoAtual.x;
+        double deltaY = receptor.y - estadoAtual.y;
+        double distanciaPasse = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        return distanciaPasse > RAIO_PASSE ? "RECEPTOR_FORA_DO_RAIO" : null;
+    }
+
     public synchronized OponenteDisputa localizarOponenteProximoParaDisputa(String nome, JogadorEstado estadoAtual) {
         OponenteDisputa oponenteEncontrado = null;
 
@@ -159,6 +239,23 @@ public class SistemaFutebol {
 
     private static boolean estaEmPenalidade(JogadorEstado estado) {
         return estado.ticksPenalidadePerderDisputaRestantes > 0;
+    }
+
+    public synchronized boolean liberarPosseBola(String nomeJogador) {
+        JogadorEstado estadoJogador = estados.get(nomeJogador);
+        boolean jogadorTinhaPosse = nomeJogador.equals(Ambiente.bola.emPosseDe)
+                || estadoJogador != null && estadoJogador.comBola;
+
+        if (estadoJogador != null) {
+            estadoJogador.comBola = false;
+        }
+
+        if (nomeJogador.equals(Ambiente.bola.emPosseDe)) {
+            Ambiente.bola.emPosseDe = null;
+        }
+
+        enviarEstadoAtualParaClientes();
+        return jogadorTinhaPosse;
     }
 
     public synchronized void chutarBola(String nomeJogador, double forcaX, double forcaY) {
@@ -316,6 +413,86 @@ public class SistemaFutebol {
         return ultimaDisputa;
     }
 
+    public synchronized void registrarInicioPasse(
+            String id,
+            String passador,
+            String receptor,
+            String iniciador) {
+        ultimoPasse = new PasseEstadoDTO(
+                id,
+                passador,
+                receptor,
+                iniciador,
+                "NEGOCIANDO",
+                null,
+                null,
+                false,
+                null,
+                iniciador + " iniciou passe de " + passador + " para " + receptor);
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized void registrarPasseExecutado(
+            String id,
+            String passador,
+            String receptor,
+            double forcaX,
+            double forcaY) {
+        if (ultimoPasse == null || !id.equals(ultimoPasse.id)) {
+            ultimoPasse = new PasseEstadoDTO(
+                    id, passador, receptor, passador, "EM_TRAJETO",
+                    forcaX, forcaY, false, null, passador + " passou para " + receptor);
+        } else {
+            ultimoPasse.status = "EM_TRAJETO";
+            ultimoPasse.forcaX = forcaX;
+            ultimoPasse.forcaY = forcaY;
+            ultimoPasse.motivoRecusa = null;
+            ultimoPasse.resultado = passador + " passou para " + receptor;
+        }
+
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized void registrarPasseRecebido(String id, String receptor) {
+        if (ultimoPasse == null || !id.equals(ultimoPasse.id)) {
+            return;
+        }
+
+        ultimoPasse.status = "RECEBIDO";
+        ultimoPasse.recebido = true;
+        ultimoPasse.resultado = receptor + " recebeu passe de " + ultimoPasse.passador;
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized void registrarPasseRecusado(String id, String jogador, String motivo) {
+        if (ultimoPasse == null || !id.equals(ultimoPasse.id)) {
+            return;
+        }
+
+        boolean posseAlterada = "POSSE_ALTERADA_ANTES_DA_RESPOSTA".equals(motivo);
+        ultimoPasse.status = posseAlterada ? "CANCELADO" : "RECUSADO";
+        ultimoPasse.motivoRecusa = motivo;
+        ultimoPasse.resultado = posseAlterada
+                ? "Pedido cancelado porque a posse mudou antes da resposta"
+                : jogador + " recusou o passe";
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized void registrarPasseExpirado(String id) {
+        if (ultimoPasse == null || !id.equals(ultimoPasse.id) || ultimoPasse.recebido) {
+            return;
+        }
+
+        ultimoPasse.status = "NAO_RECEBIDO";
+        ultimoPasse.resultado = "Passe de " + ultimoPasse.passador + " para "
+                + ultimoPasse.receptor + " nao foi recebido";
+        enviarEstadoAtualParaClientes();
+    }
+
+    public synchronized PasseEstadoDTO getUltimoPasse() {
+        return ultimoPasse;
+    }
+
     public synchronized void atualizarEstado(String nome, JogadorEstado estado) {
         estados.put(nome, estado);
         enviarEstadoAtualParaClientes();
@@ -362,6 +539,7 @@ public class SistemaFutebol {
 
     private JogadorEstado criarEstadoInicial(ConfiguracaoJogador configuracao) {
         JogadorEstado estado = new JogadorEstado();
+        estado.nome = configuracao.getNome();
         estado.x = configuracao.getXInicial();
         estado.y = configuracao.getYInicial();
         estado.golX = configuracao.getGolX();
@@ -375,6 +553,7 @@ public class SistemaFutebol {
         resposta.put("jogadores", estados);
         resposta.put("bola", Ambiente.bola);
         resposta.put("disputa", ultimaDisputa);
+        resposta.put("passe", ultimoPasse);
 
         String json = gson.toJson(resposta);
         EventSocket.enviarMensagemParaClientes(json);

@@ -1,6 +1,6 @@
 # Task 5: Passe com Comunicação ACL
 
-> **Status:** pending
+> **Status:** completed
 > **PRD:** `1-prd.md`
 > **TechSpec:** `2-techspec.md`
 > **Depende de:** Task 4 (posicionamento por zona)
@@ -20,7 +20,7 @@ ofensivo, nenhum dos dois tem mecanismo para trocar a bola.
 Implementar passe entre aliados com dois fluxos de iniciação:
 
 1. **Receptor pede**: atacante envia `REQUEST` ao zagueiro; zagueiro decide aceitar ou recusar.
-2. **Passador decide**: zagueiro detecta atacante à frente e envia `INFORM`; atacante confirma.
+2. **Passador decide**: zagueiro detecta atacante próximo e envia `INFORM`; atacante confirma.
 
 Em ambos os casos, a bola se move fisicamente no campo (sem teletransporte).
 O passador mira na **posição atual do receptor no momento do chute**.
@@ -62,7 +62,6 @@ public Optional<String> localizarAliadoEmPosicaoDePasse(
         String nomeJogador, JogadorEstado estado, Time time) {
     // retorna o nome do aliado que está:
     // - no mesmo time
-    // - mais próximo de golX do que o passador (está à frente no ataque)
     // - dentro de RAIO_PASSE
     // - sem penalidade
     // - sem cooldown de passe
@@ -89,8 +88,8 @@ o contexto.
 #### Novas constantes
 
 ```java
-private static final double RAIO_PASSE = 30.0;
-private static final int TICKS_VIAGEM_PASSE = 15;
+private static final double RAIO_PASSE = 20.0;
+private static final double FORCA_PASSE = 1.0;
 private static final int TICKS_COOLDOWN_PASSE = 10;
 static final String CONVERSA_ID_PASSE = "passe-bola";
 ```
@@ -158,9 +157,8 @@ private void executarPasse(String nomeReceptor) {
 
     if (distancia == 0) distancia = 1;
 
-    double forca = distancia / TICKS_VIAGEM_PASSE;
-    double forcaX = (dx / distancia) * forca;
-    double forcaY = (dy / distancia) * forca;
+    double forcaX = (dx / distancia) * FORCA_PASSE;
+    double forcaY = (dy / distancia) * FORCA_PASSE;
 
     estado.comBola = false;
     passePendente = false;
@@ -232,14 +230,18 @@ Limpar `aguardandoPasse` e `estado.aguardandoPasse` ao mesmo tempo.
 Quando `eu_com_bola` e `aliadoEmPosicaoDePasse != null`:
 
 ```java
-// pesos de chutar vs passar por papel
-int pesoPasse  = papel == PapelJogador.ZAGUEIRO ? 70 : 30;
-int pesoChute  = 100 - pesoPasse;
+if (papel == PapelJogador.ATACANTE) {
+    return TipoDecisao.AGIR_COM_BOLA;
+}
+
 return selecionarComPesos(Map.of(
-    TipoDecisao.PASSAR_BOLA,  pesoPasse,
-    TipoDecisao.AGIR_COM_BOLA, pesoChute
+    TipoDecisao.PASSAR_BOLA, 70,
+    TipoDecisao.AGIR_COM_BOLA, 30
 ));
 ```
+
+Somente o atacante envia `REQUEST`. O zagueiro nunca pede a bola; ele apenas
+responde aos pedidos do atacante ou inicia um passe por decisao propria.
 
 Quando `eu_com_bola` e nenhum aliado disponível: retornar `AGIR_COM_BOLA` (comportamento atual).
 
@@ -293,4 +295,48 @@ npm run dev
 
 ## Resultado
 
-_(preencher após execução)_
+- `TipoDecisao` passou a incluir `PASSAR_BOLA`; o zagueiro sorteia passe contra
+  acao com bola nos pesos 70/30. O atacante nunca escolhe `PASSAR_BOLA`, e o
+  zagueiro nunca envia solicitacoes de passe.
+- `JogadorEstado` passou a expor `nome`, `aguardandoPasse` e `ticksCooldownPasse`,
+  permitindo identificar o dono da bola e filtrar receptores em cooldown.
+- `SistemaFutebol` agora localiza o aliado mais proximo, independentemente de estar
+  a frente ou atras, no mesmo time, dentro do raio de 20 unidades, sem penalidade
+  e sem cooldown.
+- `JogadorAgent` recebeu um `CyclicBehaviour` exclusivo para `conversationId =
+  "passe-bola"`, separado do protocolo `"disputa-bola"`.
+- Implementados os dois fluxos ACL: atacante solicita com `REQUEST`, e o passador
+  pode propor com `INFORM`; confirmacoes usam `AGREE` e indisponibilidade usa
+  `REFUSE`.
+- O passe usa a posicao atual do receptor para calcular o vetor e envia a forca ao
+  `BolaAgent`; nao ha teletransporte.
+- A intensidade do passe e fixa (`FORCA_PASSE = 1.0`), independentemente da
+  distancia. O raio limita apenas quais receptores podem participar da jogada.
+- O receptor continua se posicionando enquanto aguarda. Ao obter posse, entra em
+  cooldown por 10 ticks. Negociacoes e esperas possuem timeout para evitar estado
+  preso quando uma mensagem nao recebe resposta ou o passe erra.
+- Ao ganhar a bola, o portador abre uma janela OODA de 2 ticks com a decisao
+  `AGUARDAR_SOLICITACAO_PASSE`. Nesse intervalo ele mantem a posse e processa
+  pedidos ACL antes de voltar a decidir entre passe e chute.
+- Recusa, cancelamento ou timeout inicia um backoff de 5 ticks no solicitante,
+  impedindo que o mesmo pedido seja repetido a cada ciclo de 100 ms.
+- Se a posse mudar antes de um `REQUEST` ser processado, a resposta ACL continua
+  sendo `REFUSE`, mas o estado publicado usa `CANCELADO` e o motivo
+  `POSSE_ALTERADA_ANTES_DA_RESPOSTA`, diferenciando corrida de uma recusa de regra.
+- A liberacao da bola antes de passes e chutes passou a ser sincronizada no
+  `SistemaFutebol`, limpando atomicamente `JogadorEstado.comBola` e
+  `Ambiente.bola.emPosseDe`. A forca fisica continua sendo enviada ao `BolaAgent`
+  por ACL.
+- Adicionados testes do controlador e de selecao de aliado no `SistemaFutebol`.
+- O backend passou a publicar `passe` no snapshot WebSocket, com ID, passador,
+  receptor, iniciador, status, forca, recebimento e resultado.
+- Recusas agora carregam `motivoRecusa` estruturado, permitindo ao frontend
+  distinguir passador sem bola, receptor fora do raio, penalidade, cooldown,
+  jogador inexistente ou time incorreto.
+- O frontend ganhou paineis de `Ultimo passe` abaixo do campo e no diagnostico,
+  seguindo a mesma apresentacao visual de `Ultima disputa`.
+- Validacao automatizada: `mvn clean test` com `BUILD SUCCESS`, 30 testes, zero
+  falhas e zero erros.
+- Frontend validado com `npm run lint` e `npm run build`.
+- Smoke test manual do backend ficou pendente porque ja havia uma instancia Java
+  ocupando as portas 1099, 8080 e 9090. A validacao visual permanece para a Task 6.

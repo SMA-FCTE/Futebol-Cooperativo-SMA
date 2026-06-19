@@ -16,6 +16,8 @@ public class ContextoDecisao {
     private final PerfilTatico perfilTatico;
     private final int ticksBolaLivre;
     private final boolean bolaNoFieldAdversario;
+    private final String aliadoEmPosicaoDePasse;
+    private final int ticksJanelaSolicitacaoPasseRestantes;
 
     public ContextoDecisao(
             String nomeJogador,
@@ -24,7 +26,9 @@ public class ContextoDecisao {
             PapelJogador papel,
             Time time,
             PerfilTatico perfilTatico,
-            int ticksBolaLivre) {
+            int ticksBolaLivre,
+            String aliadoEmPosicaoDePasse,
+            int ticksJanelaSolicitacaoPasseRestantes) {
         this.nomeJogador = Objects.requireNonNull(nomeJogador, "nomeJogador");
         this.estadoAtual = Objects.requireNonNull(estadoAtual, "estadoAtual");
         this.jogadorComBola = jogadorComBola;
@@ -32,6 +36,9 @@ public class ContextoDecisao {
         this.time = Objects.requireNonNull(time, "time");
         this.perfilTatico = Objects.requireNonNull(perfilTatico, "perfilTatico");
         this.ticksBolaLivre = Math.max(0, ticksBolaLivre);
+        this.aliadoEmPosicaoDePasse = aliadoEmPosicaoDePasse;
+        this.ticksJanelaSolicitacaoPasseRestantes = Math.max(
+                0, ticksJanelaSolicitacaoPasseRestantes);
 
         // A bola esta no campo adversario se esta mais perto do gol que este
         // jogador ataca (estadoAtual.golX) do que do gol que ele defende.
@@ -75,6 +82,18 @@ public class ContextoDecisao {
 
     public boolean isBolaNoFieldProprio() {
         return !bolaNoFieldAdversario;
+    }
+
+    public String getAliadoEmPosicaoDePasse() {
+        return aliadoEmPosicaoDePasse;
+    }
+
+    public int getTicksJanelaSolicitacaoPasseRestantes() {
+        return ticksJanelaSolicitacaoPasseRestantes;
+    }
+
+    public boolean isJanelaSolicitacaoPasseAtiva() {
+        return ticksJanelaSolicitacaoPasseRestantes > 0;
     }
 
     public boolean existeJogadorComBola() {

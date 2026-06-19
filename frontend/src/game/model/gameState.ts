@@ -21,6 +21,7 @@ export function createEmptyGameState(): GameState {
     players: [],
     ball: null,
     disputa: null,
+    passe: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
     tempo: null,
     meta: {

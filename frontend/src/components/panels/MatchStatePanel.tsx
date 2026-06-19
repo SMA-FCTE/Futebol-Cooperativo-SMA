@@ -1,4 +1,5 @@
 import { findBallCarrier } from '../../game/model/gameState'
+import { formatPassRefusalReason, formatPassStatus } from '../../game/model/passDisplay'
 import type { GameState, PlayerState } from '../../game/model/gameTypes'
 
 type MatchStatePanelProps = {
@@ -10,6 +11,7 @@ function MatchStatePanel({ state }: MatchStatePanelProps) {
   const azul = state.players.find((player) => player.id === 'azul') ?? null
   const carrier = findBallCarrier(state.players)
   const disputa = state.disputa
+  const passe = state.passe
 
   return (
     <div className="match-state-panel" aria-label="Estado atual da partida">
@@ -36,6 +38,23 @@ function MatchStatePanel({ state }: MatchStatePanelProps) {
             ['Vencedor', disputa?.vencedor ?? (disputa?.empate ? 'Empate' : 'Indefinido')],
             ['Empate', disputa ? formatBoolean(disputa.empate) : '-'],
             ['Resultado', disputa?.resultado ?? 'Aguardando disputa'],
+          ]}
+        />
+      </article>
+
+      <article className="match-state-card">
+        <h3>Ultimo passe</h3>
+        <StateList
+          rows={[
+            ['ID', passe?.id ?? 'Sem passe'],
+            ['Passador', passe?.passador ?? '-'],
+            ['Receptor', passe?.receptor ?? '-'],
+            ['Iniciador', passe?.iniciador ?? '-'],
+            ['Status', formatPassStatus(passe?.status ?? null)],
+            ['Forca', passe ? formatForce(passe.forcaX, passe.forcaY) : '-'],
+            ['Recebido', passe ? formatBoolean(passe.recebido) : '-'],
+            ['Motivo da recusa', formatPassRefusalReason(passe?.motivoRecusa ?? null)],
+            ['Resultado', passe?.resultado ?? 'Aguardando passe'],
           ]}
         />
       </article>
@@ -82,6 +101,14 @@ function formatNumber(value: number): string {
 
 function formatBoolean(value: boolean): string {
   return value ? 'Sim' : 'Nao'
+}
+
+function formatForce(forcaX: number | null, forcaY: number | null): string {
+  if (forcaX === null || forcaY === null) {
+    return 'Ainda nao executado'
+  }
+
+  return `${formatNumber(forcaX)}, ${formatNumber(forcaY)}`
 }
 
 export default MatchStatePanel
