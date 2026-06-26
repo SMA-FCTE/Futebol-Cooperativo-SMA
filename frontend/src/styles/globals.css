@@ -179,14 +179,15 @@ h3 {
 
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+  grid-template-columns: 1fr;
   gap: 20px;
-  align-items: start;
 }
 
-.sidebar {
+.panels-row {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+  align-items: start;
 }
 
 .panel {
@@ -199,7 +200,7 @@ h3 {
 }
 
 .viewport-panel {
-  min-height: 720px;
+  min-height: 580px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -481,16 +482,16 @@ h3 {
     padding: 18px;
   }
 
-  .dashboard {
+  .panels-row {
     grid-template-columns: 1fr;
   }
 
   .viewport-panel {
-    min-height: 580px;
+    min-height: 520px;
   }
 
   .game-viewport {
-    min-height: 460px;
+    min-height: 420px;
   }
 
   .match-state-panel {

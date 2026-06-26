@@ -102,7 +102,7 @@ function App() {
           <MatchStatePanel state={gameState} />
         </section>
 
-        <aside className="sidebar">
+        <div className="panels-row">
           <Scoreboard
             connectionStatus={connectionStatus}
             tempo={gameState.tempo}
@@ -121,7 +121,7 @@ function App() {
             wsUrl={env.wsUrl}
             apiUrl={env.apiUrl}
           />
-        </aside>
+        </div>
       </main>
     </div>
   )
