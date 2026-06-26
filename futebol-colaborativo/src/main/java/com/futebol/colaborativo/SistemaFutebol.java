@@ -22,7 +22,6 @@ public class SistemaFutebol {
     private static final double ATRITO_BOLA = 0.985;
     private static final double VELOCIDADE_MINIMA_BOLA = 0.02;
     private static final double RESTITUICAO_BORDA = 0.82;
-    private static final double RAIO_GOL = 2.4;
     private static final double RAIO_PASSE = 100.0;
 
     private final AgentContainer container;
@@ -319,8 +318,11 @@ public class SistemaFutebol {
     }
 
     private void verificarGolDaBola() {
-        boolean bolaNoGolEsquerdo = Ambiente.bola.x <= 0 && Math.abs(Ambiente.bola.y - Ambiente.golY) <= RAIO_GOL;
-        boolean bolaNoGolDireito = Ambiente.bola.x >= Ambiente.largura && Math.abs(Ambiente.bola.y - Ambiente.golY) <= RAIO_GOL;
+        boolean emFaixaGol = Ambiente.bola.y >= Ambiente.golYMin
+                && Ambiente.bola.y <= Ambiente.golYMax;
+
+        boolean bolaNoGolEsquerdo = Ambiente.bola.x <= 0 && emFaixaGol;
+        boolean bolaNoGolDireito = Ambiente.bola.x >= Ambiente.largura && emFaixaGol;
 
         if (!bolaNoGolEsquerdo && !bolaNoGolDireito) {
             return;
