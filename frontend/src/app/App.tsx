@@ -2,6 +2,8 @@ import { startTransition, useEffect, useState } from 'react'
 
 import GameViewport from '../components/game/GameViewport'
 import DebugPanel from '../components/panels/DebugPanel'
+import MatchControlPanel from '../components/panels/MatchControlPanel'
+import MatchResultPanel from '../components/panels/MatchResultPanel'
 import MatchStatePanel from '../components/panels/MatchStatePanel'
 import Scoreboard from '../components/panels/Scoreboard'
 import { env } from '../config/env'
@@ -24,6 +26,7 @@ const initialHttpState: HttpBootstrapState = {
 function App() {
   const { gameState, connectionStatus, lastRawMessage, events } = useGameWebSocket(env.wsUrl)
   const [httpState, setHttpState] = useState(initialHttpState)
+  const [matchActionLoading, setMatchActionLoading] = useState(false)
   const ballCarrier = findBallCarrier(gameState.players)
 
   useEffect(() => {
@@ -73,6 +76,24 @@ function App() {
     }
   }, [])
 
+  async function handleIniciarPartida(duracaoSegundos: number) {
+    setMatchActionLoading(true)
+    try {
+      await gameApi.iniciarPartida(duracaoSegundos)
+    } finally {
+      setMatchActionLoading(false)
+    }
+  }
+
+  async function handleReiniciarPartida() {
+    setMatchActionLoading(true)
+    try {
+      await gameApi.reiniciarPartida()
+    } finally {
+      setMatchActionLoading(false)
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -106,6 +127,28 @@ function App() {
             <span className="match-score-team match-score-vermelho">Vermelho</span>
           </div>
 
+          {gameState.partida?.estado === 'AGUARDANDO' && (
+            <MatchControlPanel
+              onIniciar={handleIniciarPartida}
+              loading={matchActionLoading}
+            />
+          )}
+
+          {gameState.partida?.estado === 'EM_ANDAMENTO' && (
+            <div className="match-timer">
+              {formatMatchTime(gameState.partida.tempoRestanteSegundos)}
+            </div>
+          )}
+
+          {gameState.partida?.estado === 'ENCERRADA' && (
+            <MatchResultPanel
+              scoreA={gameState.scoreboard.A}
+              scoreB={gameState.scoreboard.B}
+              onReiniciar={handleReiniciarPartida}
+              loading={matchActionLoading}
+            />
+          )}
+
           <GameViewport state={gameState} />
           <MatchStatePanel state={gameState} />
         </section>
@@ -133,6 +176,15 @@ function App() {
       </main>
     </div>
   )
+}
+
+function formatMatchTime(segundos: number): string {
+  const minutes = Math.floor(segundos / 60)
+    .toString()
+    .padStart(2, '0')
+  const seconds = (segundos % 60).toString().padStart(2, '0')
+
+  return `${minutes}:${seconds}`
 }
 
 function getConnectionLabel(connectionStatus: string): string {

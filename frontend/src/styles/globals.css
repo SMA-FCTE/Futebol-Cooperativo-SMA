@@ -506,6 +506,106 @@ h3 {
   font-style: italic;
 }
 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(132, 230, 168, 0.12);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(132, 230, 168, 0.22);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.match-timer {
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  padding: 2px 0 6px;
+}
+
+.match-control-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+
+.match-control-panel label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.match-control-panel input[type='number'] {
+  width: 68px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(132, 230, 168, 0.06);
+  color: var(--text);
+  font-size: 1rem;
+  text-align: center;
+  outline: none;
+}
+
+.match-control-panel input[type='number']:focus {
+  border-color: var(--accent);
+}
+
+.match-control-unit {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.match-result-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+
+.match-result-label {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.match-result-label--azul {
+  color: rgba(96, 165, 250, 0.95);
+}
+
+.match-result-label--vermelho {
+  color: rgba(248, 113, 113, 0.95);
+}
+
 @media (max-width: 1100px) {
   #root {
     padding: 18px;
