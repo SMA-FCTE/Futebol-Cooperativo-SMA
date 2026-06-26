@@ -24,6 +24,7 @@ export function createEmptyGameState(): GameState {
     passe: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
     tempo: null,
+    partida: null,
     meta: {
       payloadFormat: 'legacy-flat',
       updatedAt: null,

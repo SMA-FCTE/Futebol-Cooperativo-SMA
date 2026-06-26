@@ -12,6 +12,7 @@ import type {
   JogadaDisputa,
   LegacyFlatPayload,
   LegacyNestedPayload,
+  PartidaState,
   PasseState,
   PayloadFormat,
   PlayerState,
@@ -75,6 +76,7 @@ export function normalizeLegacyFlatPayload(raw: unknown): NormalizationResult {
     passe: normalizePasse((raw as { passe?: unknown }).passe),
     tempo: null,
     scoreboard: { ...DEFAULT_SCOREBOARD },
+    partida: null,
   })
 }
 
@@ -108,7 +110,8 @@ export function normalizeLegacyNestedPayload(raw: unknown): NormalizationResult 
     disputa,
     passe,
     tempo: null,
-    scoreboard: normalizeScoreboard((raw as { placar?: unknown }).placar),
+    scoreboard: normalizeScoreboard(payload.placar),
+    partida: normalizePartida(payload.partida),
   })
 }
 
@@ -144,6 +147,7 @@ export function normalizeSnapshotPayload(raw: unknown): NormalizationResult {
     passe: normalizePasse(payload.passe),
     tempo: coerceNullableNumber(payload.tempo),
     scoreboard: normalizeScoreboard(payload.placar),
+    partida: null,
   })
 }
 
@@ -155,6 +159,7 @@ function createSuccess({
   passe,
   tempo,
   scoreboard,
+  partida,
 }: {
   payloadFormat: PayloadFormat
   players: PlayerState[]
@@ -163,6 +168,7 @@ function createSuccess({
   passe: PasseState | null
   tempo: number | null
   scoreboard: { A: number; B: number }
+  partida: PartidaState | null
 }): NormalizationSuccess {
   const baseState = createEmptyGameState()
   const sortedPlayers = sortPlayers(players)
@@ -187,6 +193,7 @@ function createSuccess({
       passe,
       tempo,
       scoreboard,
+      partida,
       meta: {
         payloadFormat,
         updatedAt: Date.now(),
@@ -355,6 +362,23 @@ function normalizeScoreboard(value: unknown) {
   return {
     A: coerceNullableNumber(value.A) ?? DEFAULT_SCOREBOARD.A,
     B: coerceNullableNumber(value.B) ?? DEFAULT_SCOREBOARD.B,
+  }
+}
+
+function normalizePartida(value: unknown): PartidaState | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const estado = value.estado
+  if (estado !== 'AGUARDANDO' && estado !== 'EM_ANDAMENTO' && estado !== 'ENCERRADA') {
+    return null
+  }
+
+  return {
+    estado,
+    duracaoSegundos: coerceNullableNumber(value.duracaoSegundos) ?? 0,
+    tempoRestanteSegundos: coerceNullableNumber(value.tempoRestanteSegundos) ?? 0,
   }
 }
 

@@ -17,4 +17,21 @@ export const gameApi = {
   getStatus(init?: RequestInit) {
     return request<string>('/api/status', init)
   },
+  iniciarPartida(duracaoSegundos: number, init?: RequestInit) {
+    const headers = new Headers(init?.headers)
+    headers.set('Content-Type', 'application/json')
+
+    return request<{ ok: boolean }>('/api/partida/iniciar', {
+      ...init,
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ duracaoSegundos }),
+    })
+  },
+  reiniciarPartida(init?: RequestInit) {
+    return request<{ ok: boolean }>('/api/partida/reiniciar', {
+      ...init,
+      method: 'POST',
+    })
+  },
 }

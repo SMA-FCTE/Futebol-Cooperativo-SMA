@@ -29,6 +29,14 @@ export type Scoreboard = {
   B: number
 }
 
+export type EstadoPartida = 'AGUARDANDO' | 'EM_ANDAMENTO' | 'ENCERRADA'
+
+export type PartidaState = {
+  estado: EstadoPartida
+  duracaoSegundos: number
+  tempoRestanteSegundos: number
+}
+
 export type JogadaDisputa = 'PEDRA' | 'PAPEL' | 'TESOURA'
 
 export type DisputaBolaState = {
@@ -64,6 +72,7 @@ export type GameState = {
   passe: PasseState | null
   scoreboard: Scoreboard
   tempo: number | null
+  partida: PartidaState | null
   meta: {
     payloadFormat: PayloadFormat
     updatedAt: number | null
@@ -90,6 +99,8 @@ export type LegacyNestedPayload = {
   bola?: SnapshotBallPayload | null
   disputa?: DisputaBolaPayload | null
   passe?: PassePayload | null
+  placar?: SnapshotScoreboardPayload
+  partida?: PartidaPayload | null
 }
 
 export type SnapshotPlayerPayload = {
@@ -112,6 +123,12 @@ export type SnapshotBallPayload = {
 export type SnapshotScoreboardPayload = {
   A?: unknown
   B?: unknown
+}
+
+export type PartidaPayload = {
+  estado?: unknown
+  duracaoSegundos?: unknown
+  tempoRestanteSegundos?: unknown
 }
 
 export type DisputaBolaPayload = {
@@ -146,4 +163,5 @@ export type SnapshotPayload = {
   placar?: SnapshotScoreboardPayload
   disputa?: DisputaBolaPayload | null
   passe?: PassePayload | null
+  partida?: PartidaPayload | null
 }
