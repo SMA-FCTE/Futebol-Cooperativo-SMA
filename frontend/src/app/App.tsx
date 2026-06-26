@@ -98,6 +98,14 @@ function App() {
             </div>
           </div>
 
+          <div className="match-score">
+            <span className="match-score-team match-score-azul">Azul</span>
+            <strong className="match-score-value">
+              {gameState.scoreboard.A} &times; {gameState.scoreboard.B}
+            </strong>
+            <span className="match-score-team match-score-vermelho">Vermelho</span>
+          </div>
+
           <GameViewport state={gameState} />
           <MatchStatePanel state={gameState} />
         </section>

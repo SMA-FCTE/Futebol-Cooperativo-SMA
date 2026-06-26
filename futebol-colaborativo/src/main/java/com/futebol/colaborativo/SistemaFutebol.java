@@ -32,6 +32,8 @@ public class SistemaFutebol {
     private final Map<String, ConfiguracaoJogador> configuracoes = new HashMap<>();
     private DisputaBolaEstadoDTO ultimaDisputa = null;
     private PasseEstadoDTO ultimoPasse = null;
+    private int golsTimeAzul = 0;
+    private int golsTimeVermelho = 0;
 
     private static final Gson gson = new Gson();
 
@@ -328,6 +330,12 @@ public class SistemaFutebol {
             return;
         }
 
+        if (bolaNoGolEsquerdo) {
+            golsTimeVermelho++;
+        } else {
+            golsTimeAzul++;
+        }
+
         String marcador = localizarUltimoAtacante(bolaNoGolEsquerdo ? 0 : Ambiente.largura);
         registrarGol(marcador == null ? "Bola" : marcador);
     }
@@ -556,6 +564,11 @@ public class SistemaFutebol {
         resposta.put("bola", Ambiente.bola);
         resposta.put("disputa", ultimaDisputa);
         resposta.put("passe", ultimoPasse);
+
+        Map<String, Integer> placar = new HashMap<>();
+        placar.put("A", golsTimeAzul);
+        placar.put("B", golsTimeVermelho);
+        resposta.put("placar", placar);
 
         String json = gson.toJson(resposta);
         EventSocket.enviarMensagemParaClientes(json);

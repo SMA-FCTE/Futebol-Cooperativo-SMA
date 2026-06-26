@@ -213,6 +213,35 @@ h3 {
   gap: 16px;
 }
 
+.match-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.match-score-team {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.match-score-azul {
+  color: rgba(96, 165, 250, 0.9);
+}
+
+.match-score-vermelho {
+  color: rgba(248, 113, 113, 0.9);
+}
+
+.match-score-value {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
 .quick-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

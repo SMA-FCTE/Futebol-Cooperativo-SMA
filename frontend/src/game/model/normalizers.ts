@@ -108,7 +108,7 @@ export function normalizeLegacyNestedPayload(raw: unknown): NormalizationResult 
     disputa,
     passe,
     tempo: null,
-    scoreboard: { ...DEFAULT_SCOREBOARD },
+    scoreboard: normalizeScoreboard((raw as { placar?: unknown }).placar),
   })
 }
 
