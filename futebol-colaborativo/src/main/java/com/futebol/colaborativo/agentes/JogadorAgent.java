@@ -31,15 +31,15 @@ public class JogadorAgent extends Agent {
     static final String CONVERSA_ID_PASSE = "passe-bola";
     private static final boolean USAR_CHUTE_ALEATORIO_TESTE = true;
     private static final int TICKS_PENALIDADE_PERDER_DISPUTA = 20;
-    private static final double DISTANCIA_CHUTE_AO_GOL = 10.0;
-    private static final double FORCA_CHUTE = 1.65;
+    private static final double DISTANCIA_CHUTE_AO_GOL = 30.0;
+    private static final double FORCA_CHUTE = 5.0;
     private static final double MAX_DESVIO_ANGULO = Math.PI / 6.0; // 120 graus
-    private static final double FORCA_CHUTE_DIRIGIDO = 1.35;
-    private static final double DISTANCIA_POSICAO_DEFENSIVA_DO_GOL = 8.0;
+    private static final double FORCA_CHUTE_DIRIGIDO = 4.0;
+    private static final double DISTANCIA_POSICAO_DEFENSIVA_DO_GOL = 24.0;
     // Mais distante do gol que a posicao defensiva: o atacante espera proximo ao
     // meio-campo, sem se sobrepor ao zagueiro adversario (que fica colado no gol).
-    private static final double DISTANCIA_POSICAO_OFENSIVA_DO_GOL = 35.0;
-    private static final double FORCA_PASSE = 1.0;
+    private static final double DISTANCIA_POSICAO_OFENSIVA_DO_GOL = 105.0;
+    private static final double FORCA_PASSE = 3.0;
     private static final int TICKS_COOLDOWN_PASSE = 10;
     private static final int TICKS_TIMEOUT_NEGOCIACAO_PASSE = 10;
     private static final int TICKS_TIMEOUT_RECEPCAO_PASSE = 45;

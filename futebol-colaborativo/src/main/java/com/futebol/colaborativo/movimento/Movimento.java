@@ -5,11 +5,11 @@ import com.futebol.colaborativo.model.JogadorEstado;
 
 public class Movimento {
 
-    public static final double RAIO_CONTATO_BOLA = 1.2;
+    public static final double RAIO_CONTATO_BOLA = 3.6;
     // Raio em que um jogador vai atras de uma bola livre mesmo contra a sua
     // disciplina de zona: se a bola passa perto, ele a persegue.
-    public static final double RAIO_PERSEGUICAO_BOLA = 10.0;
-    public static final double RAIO_GOL = 2.0;
+    public static final double RAIO_PERSEGUICAO_BOLA = 30.0;
+    public static final double RAIO_GOL = 6.0;
 
     public static void mover(JogadorEstado estado, double alvoX, double alvoY) {
         double deltaX = alvoX - estado.x;

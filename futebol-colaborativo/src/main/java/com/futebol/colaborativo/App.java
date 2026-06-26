@@ -14,11 +14,11 @@ import com.futebol.colaborativo.model.Ambiente;
 
 public class App {
     private static final boolean CHUTAR_BOLA_NO_INICIO = true;
-    private static final double Y_INICIAL = 30;
-    private static final double AZUL_ATACANTE_X = 45;
-    private static final double AZUL_ZAGUEIRO_X = 20;
-    private static final double VERMELHO_ATACANTE_X = 55;
-    private static final double VERMELHO_ZAGUEIRO_X = 80;
+    private static final double Y_INICIAL = 75;
+    private static final double AZUL_ATACANTE_X = 135;
+    private static final double AZUL_ZAGUEIRO_X = 60;
+    private static final double VERMELHO_ATACANTE_X = 165;
+    private static final double VERMELHO_ZAGUEIRO_X = 240;
 
     public static void main(String[] args) {
         try {

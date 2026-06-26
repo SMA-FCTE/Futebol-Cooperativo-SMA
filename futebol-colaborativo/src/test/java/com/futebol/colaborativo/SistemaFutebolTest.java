@@ -115,8 +115,8 @@ class SistemaFutebolTest {
     @Test
     void ignoraAliadoForaDoRaioDePasse() {
         SistemaFutebol sistema = new SistemaFutebol(null);
-        JogadorEstado passador = criarEstado("zagueiro", 20, 30, 100, Time.AZUL);
-        JogadorEstado aliado = criarEstado("atacante", 41, 30, 100, Time.AZUL);
+        JogadorEstado passador = criarEstado("zagueiro", 60, 75, Ambiente.largura, Time.AZUL);
+        JogadorEstado aliado = criarEstado("atacante", 165, 75, Ambiente.largura, Time.AZUL);
         sistema.getEstados().put(passador.nome, passador);
         sistema.getEstados().put(aliado.nome, aliado);
 

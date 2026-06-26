@@ -1,8 +1,8 @@
 import type { GameState, PlayerState, Scoreboard } from './gameTypes'
 
 export const DEFAULT_FIELD_DIMENSIONS = {
-  width: 100,
-  height: 60,
+  width: 300,
+  height: 150,
 } as const
 
 export const DEFAULT_SCOREBOARD: Scoreboard = {
