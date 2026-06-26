@@ -23,11 +23,9 @@ public class BolaAgent extends Agent {
         addBehaviour(new TickerBehaviour(this, 16) {
             @Override
             protected void onTick() {
+                if (sistema == null || !sistema.isEmAndamento()) return;
                 ouvirChutes();
-
-                if (sistema != null) {
-                    sistema.aplicarFisicaBola();
-                }
+                sistema.aplicarFisicaBola();
             }
         });
     }

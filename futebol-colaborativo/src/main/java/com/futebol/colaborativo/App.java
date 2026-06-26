@@ -13,7 +13,7 @@ import com.futebol.colaborativo.jogo.Time;
 import com.futebol.colaborativo.model.Ambiente;
 
 public class App {
-    private static final boolean CHUTAR_BOLA_NO_INICIO = true;
+    private static final boolean CHUTAR_BOLA_NO_INICIO = false; // chute feito por iniciarPartida() quando o usuário inicia a partida
     private static final double Y_INICIAL = 75;
     private static final double AZUL_ATACANTE_X = 135;
     private static final double AZUL_ZAGUEIRO_X = 60;

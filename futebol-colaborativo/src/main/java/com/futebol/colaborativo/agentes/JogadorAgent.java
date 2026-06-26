@@ -159,6 +159,7 @@ public class JogadorAgent extends Agent {
 
             @Override
             protected void onTick() {
+                if (sistema == null || !sistema.isEmAndamento()) return;
                 decidirAcaoPrincipal();
             }
         });

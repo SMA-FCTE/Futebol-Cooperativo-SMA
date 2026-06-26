@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.futebol.colaborativo.api.EventSocket;
@@ -14,6 +18,7 @@ import com.futebol.colaborativo.model.Ambiente;
 import com.futebol.colaborativo.dto.DisputaBolaEstadoDTO;
 import com.futebol.colaborativo.dto.PasseEstadoDTO;
 import com.futebol.colaborativo.jogo.ConfiguracaoJogador;
+import com.futebol.colaborativo.jogo.EstadoPartida;
 import com.futebol.colaborativo.jogo.Time;
 import com.futebol.colaborativo.model.JogadorEstado;
 
@@ -35,10 +40,70 @@ public class SistemaFutebol {
     private int golsTimeAzul = 0;
     private int golsTimeVermelho = 0;
 
+    private EstadoPartida estadoPartida = EstadoPartida.AGUARDANDO;
+    private int duracaoSegundos = 0;
+    private int tempoRestanteSegundos = 0;
+    private final ScheduledExecutorService timerService = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> timerTask = null;
+
     private static final Gson gson = new Gson();
 
     public SistemaFutebol(AgentContainer container) {
         this.container = container;
+    }
+
+    public synchronized boolean isEmAndamento() {
+        return estadoPartida == EstadoPartida.EM_ANDAMENTO;
+    }
+
+    public synchronized void iniciarPartida(int duracaoSegundos) {
+        if (estadoPartida == EstadoPartida.EM_ANDAMENTO) return;
+
+        this.duracaoSegundos = duracaoSegundos;
+        this.tempoRestanteSegundos = duracaoSegundos;
+        this.estadoPartida = EstadoPartida.EM_ANDAMENTO;
+
+        chuteBolaInicialAleatorio();
+
+        timerTask = timerService.scheduleAtFixedRate(() -> {
+            synchronized (SistemaFutebol.this) {
+                if (estadoPartida != EstadoPartida.EM_ANDAMENTO) return;
+                tempoRestanteSegundos--;
+                if (tempoRestanteSegundos <= 0) {
+                    tempoRestanteSegundos = 0;
+                    estadoPartida = EstadoPartida.ENCERRADA;
+                }
+                enviarEstadoAtualParaClientes();
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    public synchronized void reiniciarPartida() {
+        if (timerTask != null) {
+            timerTask.cancel(false);
+            timerTask = null;
+        }
+
+        estadoPartida = EstadoPartida.AGUARDANDO;
+        duracaoSegundos = 0;
+        tempoRestanteSegundos = 0;
+        golsTimeAzul = 0;
+        golsTimeVermelho = 0;
+
+        Ambiente.bola.posicionarNoCentro();
+        Ambiente.bola.velocidadeX = 0;
+        Ambiente.bola.velocidadeY = 0;
+        Ambiente.bola.emPosseDe = null;
+
+        for (Map.Entry<String, ConfiguracaoJogador> entry : configuracoes.entrySet()) {
+            JogadorEstado estado = estados.get(entry.getKey());
+            if (estado == null) continue;
+            estado.x = entry.getValue().getXInicial();
+            estado.y = entry.getValue().getYInicial();
+            estado.comBola = false;
+        }
+
+        enviarEstadoAtualParaClientes();
     }
 
     public void chuteBolaInicialAleatorio() {
@@ -569,6 +634,12 @@ public class SistemaFutebol {
         placar.put("A", golsTimeAzul);
         placar.put("B", golsTimeVermelho);
         resposta.put("placar", placar);
+
+        Map<String, Object> partida = new HashMap<>();
+        partida.put("estado", estadoPartida.name());
+        partida.put("duracaoSegundos", duracaoSegundos);
+        partida.put("tempoRestanteSegundos", tempoRestanteSegundos);
+        resposta.put("partida", partida);
 
         String json = gson.toJson(resposta);
         EventSocket.enviarMensagemParaClientes(json);
