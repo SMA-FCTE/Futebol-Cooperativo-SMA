@@ -1,8 +1,8 @@
-# Task 3: Chute Dirigido ao Gol com Ruído Angular
+﻿# Task 3: Chute Dirigido ao Gol com Ruído Angular
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ---
 

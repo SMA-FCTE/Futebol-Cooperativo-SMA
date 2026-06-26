@@ -1,8 +1,8 @@
-# Task 6: Validação de Regressão PRD 3
+﻿# Task 6: Validação de Regressão PRD 3
 
 > **Status:** pending
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 > **Depende de:** Tasks 3, 4 e 5
 
 ---

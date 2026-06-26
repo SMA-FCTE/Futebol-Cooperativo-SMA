@@ -1,8 +1,8 @@
-# Task 4: Integrar ConfiguracaoJogador e Time no Bootstrap
+﻿# Task 4: Integrar ConfiguracaoJogador e Time no Bootstrap
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

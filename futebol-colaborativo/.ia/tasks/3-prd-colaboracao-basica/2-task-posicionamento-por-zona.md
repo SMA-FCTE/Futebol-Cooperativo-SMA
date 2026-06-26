@@ -1,8 +1,8 @@
-# Task 4: Posicionamento por Zona
+﻿# Task 4: Posicionamento por Zona
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 > **Depende de:** Task 3 (chute dirigido)
 
 ---

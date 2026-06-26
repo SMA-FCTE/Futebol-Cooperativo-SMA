@@ -1,8 +1,8 @@
-# Task 8: Validar Regressao da Refatoracao OODA
+﻿# Task 8: Validar Regressao da Refatoracao OODA
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

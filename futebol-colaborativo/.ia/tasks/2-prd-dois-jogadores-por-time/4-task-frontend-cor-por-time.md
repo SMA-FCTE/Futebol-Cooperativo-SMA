@@ -1,8 +1,8 @@
-# Task 4: Frontend - Cor dos Jogadores por Time
+﻿# Task 4: Frontend - Cor dos Jogadores por Time
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

@@ -1,7 +1,7 @@
-# TechSpec: Dois Jogadores por Time (2x2)
+﻿# TechSpec: Dois Jogadores por Time (2x2)
 
 > **Status:** rascunho tecnico
-> **PRD:** `1-prd.md`
+> **PRD:** `prd.md`
 > **Escopo:** expansao do bootstrap para 4 agentes com perfis taticos e filtro de disputa por time
 
 ---

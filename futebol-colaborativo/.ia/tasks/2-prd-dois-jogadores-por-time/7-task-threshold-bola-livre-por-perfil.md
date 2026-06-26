@@ -1,8 +1,8 @@
-# Task 6: Threshold de Bola Livre por Perfil Tatico
+﻿# Task 6: Threshold de Bola Livre por Perfil Tatico
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 > **Depende de:** Task 1 (perfis criados), Task 2 (bootstrap com papeis)
 > **Deve ser executada antes de:** Task 5 (validacao de regressao)
 

@@ -1,8 +1,8 @@
-# Task 7: Separar Nome, Time e Papel no Payload do WebSocket
+﻿# Task 7: Separar Nome, Time e Papel no Payload do WebSocket
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 > **Depende de:** Tasks 1–6 (perfis, bootstrap, filtro, frontend cor, threshold)
 > **Deve ser executada antes de:** Task 8 (validacao de regressao)
 

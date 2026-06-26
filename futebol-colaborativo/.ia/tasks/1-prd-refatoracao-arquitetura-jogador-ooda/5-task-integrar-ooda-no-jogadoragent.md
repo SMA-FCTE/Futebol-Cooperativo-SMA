@@ -1,8 +1,8 @@
-# Task 7: Integrar Ciclo OODA no JogadorAgent
+﻿# Task 7: Integrar Ciclo OODA no JogadorAgent
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

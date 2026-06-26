@@ -1,8 +1,8 @@
-# Task 5: Passe com Comunicação ACL
+﻿# Task 5: Passe com Comunicação ACL
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 > **Depende de:** Task 4 (posicionamento por zona)
 
 ---

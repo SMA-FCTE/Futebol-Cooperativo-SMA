@@ -1,6 +1,6 @@
-# TechSpec: Comportamento Tático e Passe Colaborativo
+﻿# TechSpec: Comportamento Tático e Passe Colaborativo
 
-> **PRD:** `1-prd.md`
+> **PRD:** `prd.md`
 > **Versão:** 0.2
 
 ---

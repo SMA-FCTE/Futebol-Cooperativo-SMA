@@ -1,8 +1,8 @@
-# Task 9: Consolidar Logica do Tick em decidirAcaoPrincipal
+﻿# Task 9: Consolidar Logica do Tick em decidirAcaoPrincipal
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

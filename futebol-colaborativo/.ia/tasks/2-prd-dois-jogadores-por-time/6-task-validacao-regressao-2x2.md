@@ -1,8 +1,8 @@
-# Task 5: Validacao de Regressao 2x2
+﻿# Task 5: Validacao de Regressao 2x2
 
 > **Status:** pending
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

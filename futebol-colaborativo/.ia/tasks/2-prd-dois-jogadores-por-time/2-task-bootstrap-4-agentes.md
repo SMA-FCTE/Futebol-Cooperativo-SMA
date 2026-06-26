@@ -1,8 +1,8 @@
-# Task 2: Bootstrap dos 4 Agentes e Selecao de Perfil por Papel
+﻿# Task 2: Bootstrap dos 4 Agentes e Selecao de Perfil por Papel
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

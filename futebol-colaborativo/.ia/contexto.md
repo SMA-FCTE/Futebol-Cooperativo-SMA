@@ -1,13 +1,11 @@
 # Contexto do Projeto Futebol Cooperativo SMA - Para Codex
 
-> **Versao deste documento:** 0.1 - atualizada em 2026-05-22
+> **Versao deste documento:** 0.5 - atualizada em 2026-06-26
 > **Verdade-base:** o codigo do repositorio. Quando este documento e o codigo discordarem, o codigo vence e este documento deve ser atualizado.
 >
 > **Objetivo deste documento:** servir como fonte de contexto para agentes de IA trabalharem no projeto com consistencia, sem inventar arquitetura, padroes ou regras de negocio.
 >
 > **Idioma padrao do projeto:** Portugues brasileiro.
->
-> **Observacao importante:** este documento esta intencionalmente enxuto. Algumas secoes ficam pendentes porque a arquitetura dos jogadores esta em processo de evolucao.
 
 ---
 
@@ -15,15 +13,15 @@
 
 **Futebol Cooperativo SMA** e um projeto academico de simulacao de futebol usando Sistemas Multiagentes. O backend Java usa JADE para criar agentes autonomos, manter o estado da partida e expor esse estado por HTTP/WebSocket. O frontend React renderiza o campo, jogadores, bola e informacoes de debug em tempo real.
 
-O objetivo principal e evoluir uma simulacao inicial de jogadores autonomos para um modelo mais colaborativo, com jogadores de times diferentes, papeis taticos, comunicacao por mensagens ACL e tomada de decisao mais organizada.
+O objetivo principal e evoluir uma simulacao inicial de jogadores autonomos para um modelo colaborativo, com jogadores de times diferentes, papeis taticos, comunicacao por mensagens ACL e tomada de decisao organizada via ciclo OODA.
 
 ### Contexto academico
 
 - **Disciplina / contexto:** Sistemas Multiagentes / projeto academico.
 - **Instituicao / organizacao:** UNB.
 - **Responsaveis / equipe:** preencher depois.
-- **Situacao atual:** prototipo em evolucao arquitetural.
-- **Estado atual do desenvolvimento:** backend e frontend funcionais; arquitetura de jogadores colaborativos em planejamento/refatoracao.
+- **Situacao atual:** prototipo funcional com colaboracao basica implementada.
+- **Estado atual do desenvolvimento:** 4 PRDs concluidos; backend e frontend funcionais com agentes taticos, passe ACL, campo real e placar.
 
 ### Repositorio
 
@@ -40,7 +38,7 @@ O objetivo principal e evoluir uma simulacao inicial de jogadores autonomos para
 
 ### 2.1. Problema que o projeto resolve
 
-O projeto simula uma partida simplificada de futebol com agentes autonomos. Cada jogador deve perceber o ambiente, tomar decisoes, agir no campo e, no futuro, colaborar com companheiros usando mensagens.
+O projeto simula uma partida simplificada de futebol com agentes autonomos. Cada jogador percebe o ambiente, toma decisoes, age no campo e colabora com companheiros usando mensagens ACL.
 
 O problema central e estudar/evoluir comportamento multiagente em um ambiente dinamico: disputa por bola, posse, movimentacao, ataque, defesa, interceptacao e colaboracao.
 
@@ -48,11 +46,12 @@ O problema central e estudar/evoluir comportamento multiagente em um ambiente di
 
 Construir uma simulacao de futebol cooperativo em que agentes de diferentes times consigam:
 
-- movimentar-se no campo;
+- movimentar-se no campo com posicionamento por zona tatica;
 - disputar e recuperar a bola;
-- atacar e defender;
-- comunicar intencoes por mensagens ACL;
-- evoluir para colaboracao como passe, cobertura e marcacao.
+- atacar e defender com base no papel (atacante/zagueiro);
+- comunicar intencoes por mensagens ACL (disputa e passe);
+- chutar com direcao ao gol adversario;
+- marcar gols e acumular placar.
 
 ### 2.3. Publico-alvo
 
@@ -66,20 +65,26 @@ Construir uma simulacao de futebol cooperativo em que agentes de diferentes time
 O escopo atual inclui:
 
 - backend Java com JADE;
-- agente de jogador (`JogadorAgent`);
+- agente de jogador (`JogadorAgent`) com ciclo OODA, roles e passe ACL;
 - agente da bola (`BolaAgent`);
+- 4 agentes: 2 por time (atacante + zagueiro cada);
+- times AZUL e VERMELHO com papeis ATACANTE e ZAGUEIRO;
+- campo 300×150 unidades;
+- area de gol real (faixa de Y valida, nao apenas ponto central);
+- chute dirigido ao gol com ruido angular;
+- posicionamento por zona (atacante avancado, zagueiro recuado);
+- passe colaborativo via mensagens ACL entre companheiros;
+- placar por time exibido no frontend;
 - estado compartilhado da partida;
 - API HTTP simples;
 - WebSocket para transmitir estado ao frontend;
-- frontend React/Pixi para visualizar a simulacao;
-- documento de arquitetura dos jogadores colaborativos.
+- frontend React/Pixi para visualizar a simulacao com layout de campo completo.
 
 Fora de escopo por enquanto:
 
 - goleiro implementado;
-- passe colaborativo completo;
 - marcacao coletiva;
-- tomada de decisao probabilistica implementada;
+- tomada de decisao probabilistica;
 - banco de dados ou persistencia;
 - regras reais completas de futebol.
 
@@ -134,7 +139,7 @@ Efeitos esperados:
 
 - sobe o container JADE;
 - cria o sistema da partida;
-- cria agentes iniciais;
+- cria 4 agentes (2 azul: atacante-1/zagueiro-1, 2 vermelho: atacante-2/zagueiro-2);
 - inicia API HTTP em `http://localhost:8080`;
 - inicia WebSocket em `ws://localhost:9090`.
 
@@ -169,56 +174,81 @@ VITE_GAME_WS_URL    # fallback: ws://localhost:9090
 Futebol-Cooperativo-SMA/
 |-- futebol-colaborativo/
 |   |-- pom.xml
-|   |-- agenteFutColaborativo.md
-|   |-- arquitetura-jogadores-colaborativos.md
 |   |-- .ia/
+|   |   |-- contexto.md          <- este arquivo
+|   |   |-- guia-desenvolvimento-com-ia.md
+|   |   |-- tasks/
+|   |       |-- 1-prd-refatoracao-arquitetura-jogador-ooda/
+|   |       |   |-- prd.md
+|   |       |   |-- techspec.md
+|   |       |   |-- 1-task-...md  (tasks numeradas a partir de 1)
+|   |       |-- 2-prd-dois-jogadores-por-time/
+|   |       |-- 3-prd-colaboracao-basica/
+|   |       |-- 4-prd-campo-real-area-gol-e-placar/
 |   |-- src/main/java/com/futebol/colaborativo/
 |       |-- App.java
 |       |-- SistemaFutebol.java
-|       |-- agentes/
-|       |-- api/
-|       |-- dto/
-|       |-- model/
-|       |-- movimento/
+|       |-- agentes/         (JogadorAgent, BolaAgent)
+|       |-- api/             (ApiServer, EventSocket)
+|       |-- dto/             (DisputaBolaEstadoDTO, PasseEstadoDTO)
+|       |-- estrategia/      (ControladorDecisaoJogador, PerfilTatico, SeletorDecisaoPonderada)
+|       |-- jogo/            (ConfiguracaoJogador, ContextoDecisao, PapelJogador, Time, TipoDecisao)
+|       |-- model/           (Ambiente, Bola, JogadorEstado)
+|       |-- movimento/       (Movimento)
 |
 |-- frontend/
 |   |-- package.json
 |   |-- vite.config.ts
 |   |-- src/
-|       |-- app/
-|       |-- components/
+|       |-- app/             (App.tsx)
+|       |-- components/      (GameViewport, Scoreboard, DebugPanel, MatchStatePanel)
 |       |-- config/
-|       |-- game/
+|       |-- game/            (model, events, rendering)
 |       |-- hooks/
 |       |-- services/
+|       |-- styles/
 ```
 
-### 5.1. Responsabilidade das principais pastas
+### 5.1. Convencao de arquivos nas tasks
+
+Cada pasta de PRD contem:
+
+- `prd.md` — documento de requisitos do produto
+- `techspec.md` — especificacao tecnica detalhada
+- `1-task-<nome>.md` — primeira task de implementacao
+- `2-task-<nome>.md` — segunda task, e assim por diante
+
+### 5.2. Responsabilidade das principais pastas
 
 | Pasta / arquivo | Responsabilidade |
 | --- | --- |
-| `futebol-colaborativo/src/main/java/com/futebol/colaborativo` | Backend Java da simulacao |
-| `futebol-colaborativo/src/main/java/com/futebol/colaborativo/agentes` | Agentes JADE (`JogadorAgent`, `BolaAgent`) |
-| `futebol-colaborativo/src/main/java/com/futebol/colaborativo/model` | Estado do ambiente, bola e jogadores |
-| `futebol-colaborativo/src/main/java/com/futebol/colaborativo/movimento` | Funcoes de movimento e distancia |
-| `futebol-colaborativo/src/main/java/com/futebol/colaborativo/api` | API HTTP e WebSocket |
+| `agentes/` | Agentes JADE (`JogadorAgent`, `BolaAgent`) |
+| `api/` | API HTTP e WebSocket |
+| `dto/` | Objetos de transferencia ao frontend (disputa, passe) |
+| `estrategia/` | Controlador de decisao, perfil tatico e seletor ponderado |
+| `jogo/` | Enums e classes do dominio do jogo (Time, Papel, Contexto, Decisao, Configuracao) |
+| `model/` | Estado do ambiente, bola e jogadores |
+| `movimento/` | Funcoes de movimento e distancia |
 | `frontend/src/game` | Modelo, normalizacao e renderizacao do jogo |
 | `frontend/src/components` | Componentes visuais da interface |
 | `frontend/src/services` | Cliente HTTP e WebSocket |
 | `futebol-colaborativo/.ia` | Artefatos de processo com IA |
 
-### 5.2. Arquivos criticos
+### 5.3. Arquivos criticos
 
 | Arquivo | Por que e importante |
 | --- | --- |
-| `App.java` | Inicializa JADE, sistema, agentes, API e WebSocket |
-| `SistemaFutebol.java` | Orquestra estado da partida, posse, gol, fisica da bola e broadcast |
-| `JogadorAgent.java` | Contem o comportamento atual do jogador e a disputa ACL |
+| `App.java` | Inicializa JADE, sistema, 4 agentes, API e WebSocket |
+| `SistemaFutebol.java` | Orquestra estado, posse, gol, fisica, placar e broadcast |
+| `JogadorAgent.java` | Ciclo OODA do jogador: decisao, movimento, disputa, passe, chute |
 | `BolaAgent.java` | Recebe chutes e aciona fisica da bola |
+| `ControladorDecisaoJogador.java` | Escolhe `TipoDecisao` com base no `ContextoDecisao` |
+| `PerfilTatico.java` | Pesos por papel (atacante/zagueiro) para selecao de decisao |
+| `ConfiguracaoJogador.java` | Dados fixos de cada jogador: nome, time, papel, posicao inicial, golX |
 | `Movimento.java` | Centraliza mecanica de movimento |
 | `frontend/src/app/App.tsx` | Tela principal que conecta HTTP/WebSocket e renderiza paineis |
 | `frontend/src/game/model/gameTypes.ts` | Tipos principais do estado do jogo no frontend |
-| `arquitetura-jogadores-colaborativos.md` | Documento de decisao da arquitetura futura dos jogadores |
+| `frontend/src/game/model/normalizers.ts` | Normaliza payloads do WebSocket em GameState |
 
 ---
 
@@ -229,28 +259,31 @@ Futebol-Cooperativo-SMA/
 ```text
 App.java
   -> cria SistemaFutebol
-  -> cria BolaAgent e JogadorAgent
+  -> cria BolaAgent e 4 JogadorAgent (com ConfiguracaoJogador por time/papel)
   -> inicia ApiServer
   -> inicia EventSocket
 
-JogadorAgent
-  -> decide movimento/acao
-  -> envia estado ao SistemaFutebol
-  -> envia mensagens ACL para disputa e chute
+JogadorAgent (ciclo OODA)
+  -> Observar: le bola, estado proprio, mensagens ACL
+  -> Orientar: monta ContextoDecisao (time, papel, posse, zona)
+  -> Decidir: ControladorDecisaoJogador escolhe TipoDecisao via PerfilTatico
+  -> Agir: mover, chutar dirigido, passar (ACL), responder disputa (ACL)
 
 BolaAgent
   -> recebe chute por ACLMessage
   -> chama SistemaFutebol.chutarBola
 
 SistemaFutebol
-  -> mantem estados
-  -> atualiza Ambiente.bola
-  -> publica JSON no WebSocket
+  -> mantem estados de 4 jogadores
+  -> aplica fisica da bola a cada tick
+  -> detecta gol (faixa Y real), incrementa placar por time
+  -> publica JSON no WebSocket com jogadores, bola, disputa, passe e placar
 
 frontend
   -> busca bootstrap via HTTP
   -> acompanha jogo via WebSocket
-  -> renderiza campo, jogadores, bola e debug
+  -> normaliza payload (formato legacy-nested)
+  -> renderiza campo 300x150, jogadores com cor por time, bola, placar e debug
 ```
 
 ### 6.2. Componentes principais
@@ -259,9 +292,12 @@ frontend
 | --- | --- |
 | `App` | Bootstrap do backend |
 | `SistemaFutebol` | Orquestrador local da partida |
-| `JogadorAgent` | Agente JADE do jogador; hoje concentra decisao, movimento, disputa e posse |
+| `JogadorAgent` | Agente JADE com ciclo OODA, roles, passe ACL e chute dirigido |
 | `BolaAgent` | Agente JADE da bola |
-| `Ambiente` | Estado global do campo e bola |
+| `ControladorDecisaoJogador` | Seleciona TipoDecisao com base em ContextoDecisao e PerfilTatico |
+| `PerfilTatico` | Pesos de decisao por papel tatico |
+| `SeletorDecisaoPonderada` | Sorteia decisao ponderada pelos pesos do perfil |
+| `Ambiente` | Estado global do campo (300x150) e bola |
 | `Bola` | Posicao, velocidade e posse da bola |
 | `JogadorEstado` | Estado atual de um jogador |
 | `Movimento` | Movimento, distancia e limites |
@@ -269,7 +305,7 @@ frontend
 | `EventSocket` | Broadcast WebSocket |
 | `frontend` | Visualizacao da simulacao |
 
-### 6.3. Decisoes arquiteturais atuais
+### 6.3. Decisoes arquiteturais
 
 | Decisao | Justificativa |
 | --- | --- |
@@ -278,42 +314,35 @@ frontend
 | Manter estado em memoria | Simulacao academica/prototipo, sem persistencia por enquanto |
 | Transmitir estado por WebSocket | Frontend precisa acompanhar simulacao em tempo real |
 | Usar frontend separado | Facilita visualizacao e depuracao do estado |
-
-### 6.4. Arquitetura futura em planejamento
-
-Detalhes estao no arquivo `futebol-colaborativo/arquitetura-jogadores-colaborativos.md`.
-
-Resumo da direcao planejada:
-
-```text
-JogadorAgent
-  comportamento comum e ciclo JADE
-
-JogadorAtacanteAgent extends JogadorAgent
-  perfil ofensivo inicial
-
-JogadorZagueiroAgent extends JogadorAgent
-  perfil defensivo inicial
-
-ControladorDecisaoJogador
-  decide com base em ContextoDecisao e PerfilTatico
-```
-
-Esta arquitetura ainda nao esta implementada no codigo atual.
+| Um unico JogadorAgent com ConfiguracaoJogador | Papel e time sao configurados, nao subclasses; evita duplicacao do ciclo JADE |
+| Ciclo OODA no tick do jogador | Combina com agentes autonomos em ambiente dinamico |
+| Passe via ACL | Colaboracao entre companheiros segue o modelo multiagente do projeto |
+| Placar em memoria no SistemaFutebol | Prototipo; reseta ao reiniciar |
 
 ---
 
 ## 7. Dominio e Entidades Principais
 
+### 7.1. Entidades implementadas
+
 | Entidade / classe | Responsabilidade |
 | --- | --- |
-| `Ambiente` | Define largura, altura, gol e instancia global da bola |
+| `Ambiente` | Define largura=300, altura=150, golYMin/golYMax e instancia global da bola |
 | `Bola` | Controla posicao, velocidade e posse atual |
-| `JogadorEstado` | Guarda `x`, `y`, velocidade, posse, penalidade e `golX` |
+| `JogadorEstado` | Guarda x, y, velocidade, posse, penalidade, golX, time e papel |
+| `Time` | Enum AZUL / VERMELHO |
+| `PapelJogador` | Enum ATACANTE / ZAGUEIRO |
+| `ConfiguracaoJogador` | Dados fixos por jogador (nome, time, papel, posicao inicial, golX) |
+| `ContextoDecisao` | Snapshot situacional para o controlador de decisao |
+| `TipoDecisao` | Enum de acoes possiveis (perseguir, chutar, passar, defender etc.) |
+| `ControladorDecisaoJogador` | Escolhe TipoDecisao a partir do ContextoDecisao e PerfilTatico |
+| `PerfilTatico` | Pesos de decisao por papel |
+| `SeletorDecisaoPonderada` | Sorteia decisao com base nos pesos |
 | `DisputaBolaEstadoDTO` | Estado da ultima disputa para exposicao ao frontend |
+| `PasseEstadoDTO` | Estado do ultimo passe para exposicao ao frontend |
 | `SistemaFutebol.OponenteDisputa` | Representa oponente proximo encontrado para disputa |
 
-Estados importantes:
+### 7.2. Estados importantes
 
 | Estado | Significado |
 | --- | --- |
@@ -322,15 +351,8 @@ Estados importantes:
 | `ticksPenalidadePerderDisputaRestantes` | Jogador perdeu disputa e fica temporariamente impedido |
 | `disputaEmAndamento` | Jogador esta resolvendo disputa ACL |
 | `ultimaDisputa` | Ultimo estado de disputa enviado ao frontend |
-
-Entidades planejadas, ainda nao consolidadas:
-
-- `Time`
-- `PapelJogador`
-- `PerfilTatico`
-- `ContextoDecisao`
-- `TipoDecisao`
-- `ControladorDecisaoJogador`
+| `ultimoPasse` | Ultimo estado de passe enviado ao frontend |
+| `golsTimeAzul` / `golsTimeVermelho` | Placar atual; resetado ao reiniciar o backend |
 
 ---
 
@@ -338,16 +360,22 @@ Entidades planejadas, ainda nao consolidadas:
 
 ### 8.1. Regras atuais
 
-- O campo possui dimensoes globais em `Ambiente`.
+- O campo tem `largura=300` e `altura=150`.
 - A bola inicia no centro do campo.
 - O jogador se move em direcao a alvos usando `Movimento.mover`.
-- Um jogador ganha posse ao tocar na bola.
+- Um jogador ganha posse ao tocar na bola (dentro do `RAIO_CONTATO_BOLA`).
 - Quando um jogador com bola chuta, ele envia mensagem ACL para `BolaAgent`.
 - `BolaAgent` interpreta a forca e o `SistemaFutebol` aplica a fisica.
-- A disputa de bola usa mensagens ACL com protocolo FIPA Contract Net.
-- A disputa atual usa jogadas `PEDRA`, `PAPEL`, `TESOURA`.
+- Chutes sao dirigidos ao centro do gol adversario com ruido angular aleatorio.
+- A disputa de bola usa mensagens ACL com protocolo FIPA Contract Net (PEDRA/PAPEL/TESOURA).
 - Quem perde disputa recebe penalidade temporaria.
-- Ao gol, a bola volta ao centro e jogadores voltam para suas posicoes iniciais.
+- Disputa so ocorre entre adversarios (times diferentes).
+- Atacante se posiciona na zona ofensiva; zagueiro, na zona defensiva.
+- Passe: jogador envia REQUEST ACL ao aliado mais proximo dentro do raio de passe; aliado responde AGREE ou REFUSE.
+- Gol ocorre quando `bola.x <= 0` ou `bola.x >= largura` E `bola.y ∈ [golYMin, golYMax]` (faixa real do gol).
+- Gol no lado esquerdo (x=0): time VERMELHO marca. Gol no lado direito (x=largura): time AZUL marca.
+- Ao gol, a bola volta ao centro, jogadores voltam as posicoes iniciais e o placar e atualizado.
+- O payload WebSocket inclui: `jogadores`, `bola`, `disputa`, `passe`, `placar`.
 
 ### 8.2. Invariantes
 
@@ -355,16 +383,14 @@ Entidades planejadas, ainda nao consolidadas:
 - Quando a bola esta em posse, `Ambiente.bola.emPosseDe` deve indicar o jogador correto.
 - Jogadores nao devem sair dos limites do campo apos movimento.
 - O estado enviado ao frontend deve ser serializavel em JSON.
+- Disputa ACL so e iniciada entre jogadores de times opostos.
 
-### 8.3. Regras planejadas
+### 8.3. Regras pendentes
 
-Preencher depois da refatoracao de jogadores colaborativos:
-
-- regra de time;
-- regra de papel tatico;
-- regra de decisao probabilistica;
-- regra de passe;
-- regra de marcacao/cobertura.
+- marcacao coletiva;
+- regra de goleiro;
+- decisao probabilistica com pesos dinamicos;
+- persistencia de placar entre sessoes.
 
 ---
 
@@ -372,7 +398,7 @@ Preencher depois da refatoracao de jogadores colaborativos:
 
 ### 9.1. Mecanismos atuais
 
-- **ACL/JADE:** entre agentes.
+- **ACL/JADE:** entre agentes (disputa e passe).
 - **Chamadas Java diretas:** entre agentes e `SistemaFutebol`.
 - **HTTP REST:** frontend busca status e jogadores.
 - **WebSocket:** backend envia estado da simulacao ao frontend.
@@ -381,7 +407,8 @@ Preencher depois da refatoracao de jogadores colaborativos:
 
 | Mensagem / evento | Origem | Destino | Objetivo |
 | --- | --- | --- | --- |
-| `CFP` / `PROPOSE` / `ACCEPT_PROPOSAL` / `REJECT_PROPOSAL` / `REFUSE` | `JogadorAgent` | `JogadorAgent` | Resolver disputa de bola |
+| `CFP` / `PROPOSE` / `ACCEPT_PROPOSAL` / `REJECT_PROPOSAL` / `REFUSE` | `JogadorAgent` | `JogadorAgent` | Resolver disputa de bola entre adversarios |
+| `REQUEST` / `AGREE` / `REFUSE` | `JogadorAgent` | `JogadorAgent` | Negociar e executar passe entre aliados |
 | `INFORM` com `forcaX,forcaY` | `JogadorAgent` | `BolaAgent` | Chutar a bola |
 | `GET /api/jogadores` | Frontend | Backend | Obter estados dos jogadores |
 | `GET /api/status` | Frontend | Backend | Obter status textual do sistema |
@@ -389,38 +416,39 @@ Preencher depois da refatoracao de jogadores colaborativos:
 
 ### 9.3. Comunicacao planejada
 
-Preencher depois da arquitetura colaborativa. Exemplos previstos:
-
-- pedido de passe;
-- aviso de marcacao;
-- pedido de cobertura;
-- proposta/confirmacao de passe;
-- mensagens taticas entre companheiros.
+- mensagens taticas (avisos de posicionamento, pedido de cobertura).
 
 ---
 
 ## 10. Ciclo Principal de Execucao
 
-### 10.1. Ciclo atual do jogador
+### 10.1. Ciclo atual do jogador (OODA implementado)
 
 ```text
 Tick do JogadorAgent
   |
   v
-Verifica penalidade
+Observar
+  le posicao da bola, estado proprio, mensagens ACL pendentes
   |
   v
-Verifica disputa em andamento
+Orientar
+  monta ContextoDecisao (time, papel, posse, bolaNoFieldAdversario, aliados etc.)
   |
   v
-Tenta iniciar disputa se houver oponente proximo
+Decidir
+  ControladorDecisaoJogador.decidir(contexto, perfilTatico)
+  retorna TipoDecisao
   |
   v
-Decide acao principal
-  |
-  |-- ninguem com bola --> perseguir bola
-  |-- jogador com bola -> chutar/conduzir
-  |-- outro com bola ---> interceptar
+Agir
+  PERSEGUIR_BOLA    -> mover em direcao a bola
+  CHUTAR_GOL        -> chutar com angulo dirigido + ruido
+  SOLICITAR_PASSE   -> enviar REQUEST ACL ao aliado
+  POSICIONAR        -> mover para zona tatica (ataque ou defesa)
+  DISPUTAR          -> iniciar/responder CFP ACL com adversario
+  CONDUZIR          -> manter posse e mover
+  ...
   |
   v
 Atualiza estado no SistemaFutebol
@@ -432,48 +460,27 @@ Atualiza estado no SistemaFutebol
 Tick do BolaAgent
   |
   v
-Ouve mensagens de chute
+Ouve mensagens de chute (ACL INFORM)
   |
   v
-SistemaFutebol aplica fisica da bola
+SistemaFutebol aplica fisica (atrito, rebate, verificacao de gol)
   |
   v
-SistemaFutebol publica estado no WebSocket
+SistemaFutebol publica estado no WebSocket (com placar)
 ```
 
-### 10.3. Ciclo futuro planejado: OODA
+### 10.3. Pontos sensiveis
 
-O ciclo dos jogadores deve se aproximar de um modelo OODA:
-
-```text
-Observar
-  receber ACL, ler bola, jogadores e ambiente
-
-Orientar
-  montar ContextoDecisao com time, papel, perfil e mensagens
-
-Decidir
-  ControladorDecisaoJogador escolhe TipoDecisao
-
-Agir
-  mover, chutar, passar, defender ou enviar ACL
-```
-
-Esta versao ainda esta em planejamento/documentacao.
-
-### 10.4. Pontos sensiveis
-
-- `JogadorAgent` mistura muitas responsabilidades.
-- A disputa ACL ja funciona e deve ser refatorada com cuidado.
-- `Ambiente.bola` e estado global facilitam prototipo, mas dificultam testes.
-- `SistemaFutebol.localizarOponenteProximoParaDisputa` ainda nao considera time.
+- A disputa ACL ja funciona e deve ser alterada com cuidado.
+- `Ambiente.bola` e estado global; facilita prototipo mas dificulta testes isolados.
 - Frontend normaliza formatos legados; alterar payload pode quebrar visualizacao.
+- Constantes de distancia/forca em `JogadorAgent` e `Movimento` estao calibradas para campo 300×150.
 
 ---
 
 ## 11. Padroes de Codigo
 
-### 11.1. Convenções gerais
+### 11.1. Convencoes gerais
 
 - Preservar comportamento existente durante refatoracoes.
 - Preferir mudancas pequenas e incrementais.
@@ -509,8 +516,7 @@ Evitar comentarios que apenas repetem o que o codigo ja diz.
 
 ### 12.1. Estado atual dos testes
 
-- JUnit 5 esta configurado no backend.
-- Nao ha garantia neste documento de cobertura automatizada relevante.
+- JUnit 5 configurado; 30 testes passando em `SistemaFutebolTest`.
 - Frontend possui scripts de build e lint.
 
 ### 12.2. Validacao esperada
@@ -533,11 +539,12 @@ npm run build
 Validacao manual:
 
 - subir backend;
-- subir frontend;
-- verificar se o campo renderiza;
-- verificar jogadores e bola se movimentando;
-- verificar WebSocket conectado;
-- verificar painel de debug sem erro critico.
+- subir frontend em `http://localhost:5173`;
+- verificar campo 300x150 renderizado;
+- verificar 4 jogadores (2 azul, 2 vermelho) e bola se movimentando;
+- verificar placar `Azul 0 x 0 Vermelho` acima do canvas;
+- verificar passes e disputas nos logs;
+- verificar WebSocket conectado e painel de debug sem erro critico.
 
 ---
 
@@ -545,55 +552,53 @@ Validacao manual:
 
 ### 13.1. O que ja existe
 
-- inicializacao do JADE;
-- criacao de jogadores e bola;
-- movimento de jogador;
-- perseguicao da bola;
-- chute da bola;
-- fisica simples da bola;
-- disputa de bola por mensagens ACL/FIPA;
+- inicializacao do JADE com 4 agentes (2 por time);
+- time e papel tatico (ATACANTE / ZAGUEIRO) por configuracao;
+- ciclo de decisao OODA com `ContextoDecisao`, `ControladorDecisaoJogador` e `PerfilTatico`;
+- movimento e perseguicao da bola;
+- posicionamento por zona tatica (atacante avancado, zagueiro recuado);
+- chute dirigido ao gol adversario com ruido angular;
+- passe colaborativo por mensagens ACL entre companheiros;
+- disputa de bola por mensagens ACL/FIPA (so entre adversarios);
+- fisica simples da bola (atrito, rebate nas bordas);
+- campo 300x150 com area de gol real (faixa Y);
+- deteccao de gol com area real e contador de placar por time;
 - API HTTP;
-- WebSocket de estado;
-- frontend de visualizacao.
+- WebSocket de estado com payload `jogadores, bola, disputa, passe, placar`;
+- frontend com campo proporcional, jogadores com cor por time, placar e paineis de debug.
 
 ### 13.2. O que esta parcialmente implementado ou em teste
 
-- comportamento ofensivo/defensivo ainda simplificado;
-- interceptacao;
-- chute aleatorio de teste no `JogadorAgent`;
-- suporte do frontend a formatos diferentes de payload.
+- comportamento ofensivo/defensivo baseado em zona e perfil, mas sem calibracao fina;
+- seletor ponderado de decisao (implementado, pesos estaticos por papel);
+- interceptacao (logica presente, nao e o foco do ciclo atual).
 
 ### 13.3. O que ainda nao existe
 
-- papeis taticos implementados como classes/estrategias;
-- 2 jogadores por time de forma consolidada;
-- passe colaborativo;
-- comunicacao tatica entre companheiros;
 - goleiro;
-- decisao probabilistica;
-- persistencia.
+- marcacao coletiva;
+- decisao probabilistica com pesos dinamicos;
+- persistencia de placar entre sessoes;
+- regras reais completas de futebol.
 
 ---
 
 ## 14. Backlog / Proximas Mudancas
 
-### 14.1. Mudancas planejadas
+### 14.1. Possiveis proximas evolucoes
 
 | ID | Mudanca | Prioridade | Observacao |
 | --- | --- | --- | --- |
-| AJC-1 | Formalizar PRD/TechSpec/tasks da arquitetura de jogadores colaborativos | Alta | Artefatos em `.ia/tasks/prd-arquitetura-jogadores-colaborativos` |
-| AJC-2 | Adicionar time e papel ao dominio | Alta | Base para 2x2 e evitar disputa entre companheiros |
-| AJC-3 | Criar arquitetura de decisao com contexto/controlador/perfil | Alta | Preparar OODA e probabilidades |
-| AJC-4 | Criar subclasses finas para atacante/zagueiro | Media | Heranca deve configurar perfil, nao duplicar ciclo JADE |
-| AJC-5 | Extrair interceptacao e disputa gradualmente | Media | Partes sensiveis |
+| EV-1 | Calibracao fina de constantes (forca, raios, pesos de decisao) | Media | A ser feita apos observacao visual da simulacao |
+| EV-2 | Marcacao/cobertura entre companheiros | Media | Exige comunicacao tatica adicional por ACL |
+| EV-3 | Goleiro | Baixa | Papel novo com logica proprio |
+| EV-4 | Pesos de decisao dinamicos por situacao de jogo | Baixa | Extensao do PerfilTatico atual |
 
 ### 14.2. Debitos tecnicos conhecidos
 
-- `JogadorAgent` concentra responsabilidades demais.
-- Estado global em `Ambiente`.
-- Falta modelagem explicita de time.
-- Falta separacao clara entre decisao tatica e acao concreta.
-- Possiveis problemas de encoding em textos com acentos ja apareceram em arquivos/documentos.
+- `JogadorAgent` ainda e o ponto central do comportamento; separar mais responsabilidades progressivamente.
+- `Ambiente.bola` e estado global que dificulta testes isolados.
+- Constante `MAX_DESVIO_ANGULO = Math.PI / 6.0` tem comentario incorreto ("120 graus"); valor real e 30 graus.
 
 ---
 
@@ -601,9 +606,12 @@ Validacao manual:
 
 | Data | Decisao | Justificativa | Status |
 | --- | --- | --- | --- |
-| 2026-05-22 | Usar arquitetura hibrida para jogadores | Heranca para especialidade inicial e composicao/estrategia para decisao dinamica | Ativa |
-| 2026-05-22 | Usar OODA como modelo mental do tick do jogador | Combina com agentes autonomos em ambiente dinamico | Ativa |
-| 2026-05-22 | Manter mensagens ACL como base de colaboracao entre agentes | Projeto e de Sistemas Multiagentes com JADE | Ativa |
+| 2026-05-22 | Usar arquitetura hibrida para jogadores | Papel configurado em vez de subclasses; evita duplicar o ciclo JADE | Ativa |
+| 2026-05-22 | Usar OODA como modelo mental do tick do jogador | Combina com agentes autonomos em ambiente dinamico | Implementado |
+| 2026-05-22 | Manter mensagens ACL como base de colaboracao entre agentes | Projeto e de SMA com JADE | Ativa |
+| 2026-06-26 | Campo 300x150 (era 100x60) | Mais espaco para manobras taticas e visibilidade | Ativa |
+| 2026-06-26 | Area de gol real em vez de raio puntual | Coerencia visual entre frontend e backend | Ativa |
+| 2026-06-26 | Placar em memoria no SistemaFutebol | Prototipo; persistencia fora de escopo por enquanto | Ativa |
 
 ---
 
@@ -611,9 +619,8 @@ Validacao manual:
 
 | Tema | Duvida | Impacto | Quem decide |
 | --- | --- | --- | --- |
-| Estrutura exata dos pacotes novos | `jogo`, `estrategia`, `disputa`, `comunicacao` etc. | Organizacao da refatoracao | Equipe/projeto |
-| Formato das mensagens taticas ACL | String simples, chave/valor, JSON ou outro formato | Comunicacao entre agentes | Equipe/projeto |
-| Probabilidades | Quando e como aplicar pesos taticos | Comportamento dos agentes | Equipe/projeto |
+| Formato das mensagens taticas ACL | String simples, chave/valor ou JSON | Comunicacao tatica futura entre aliados | Equipe/projeto |
+| Pesos de decisao | Quando e como tornar os pesos dinamicos | Comportamento dos agentes | Equipe/projeto |
 | Goleiro | Quando criar e quais capacidades especiais | Escopo futuro | Equipe/projeto |
 
 ---
@@ -623,10 +630,9 @@ Validacao manual:
 ### 17.1. Riscos tecnicos
 
 - Quebrar a disputa de bola ao extrair logica ACL.
-- Criar subclasses grandes demais e duplicar o ciclo JADE.
-- Transformar `SistemaFutebol` em controlador central de decisoes.
-- Alterar payload do WebSocket sem ajustar o frontend.
-- Misturar refatoracao arquitetural com mudanca grande de comportamento.
+- Alterar payload do WebSocket sem ajustar o normalizer do frontend.
+- Alterar constantes de distancia/forca sem recalibrar para campo 300x150.
+- Transformar `SistemaFutebol` em controlador central de decisoes dos agentes.
 
 ### 17.2. Cuidados ao usar IA no projeto
 
@@ -649,10 +655,9 @@ Ao pedir mudancas para IA:
 A IA deve:
 
 1. Ler este `contexto.md`.
-2. Ler `arquitetura-jogadores-colaborativos.md` quando a mudanca envolver jogadores.
-3. Identificar arquivos relacionados.
-4. Explicar plano e riscos.
-5. Aplicar mudancas pequenas.
+2. Identificar arquivos relacionados.
+3. Explicar plano e riscos.
+4. Aplicar mudancas pequenas.
 
 ### 18.2. Durante a implementacao
 
@@ -682,7 +687,11 @@ A IA deve informar:
 
 | Versao | Data | Mudanca |
 | --- | --- | --- |
-| 0.1 | 2026-05-22 | Criacao inicial do documento de contexto para backend `futebol-colaborativo` e `frontend` |
+| 0.1 | 2026-05-22 | Criacao inicial do documento de contexto |
+| 0.2 | 2026-06-26 | PRD 1: refatoracao OODA (ContextoDecisao, ControladorDecisaoJogador, PerfilTatico, TipoDecisao) |
+| 0.3 | 2026-06-26 | PRD 2: 2 jogadores por time, Time, PapelJogador, ConfiguracaoJogador, disputa filtrada por time |
+| 0.4 | 2026-06-26 | PRD 3: chute dirigido, posicionamento por zona, passe ACL |
+| 0.5 | 2026-06-26 | PRD 4: campo 300x150, area de gol real, layout frontend, placar; renomeacao de arquivos .ia/tasks |
 
 ---
 
@@ -692,82 +701,72 @@ A IA deve informar:
 
 | Agente | Responsabilidade |
 | --- | --- |
-| `JogadorAgent` | Jogador autonomo; move, persegue bola, chuta, intercepta, disputa bola e atualiza estado |
-| `BolaAgent` | Bola da partida; recebe chutes e dispara atualizacao fisica |
+| `JogadorAgent` | Jogador autonomo; ciclo OODA com decisao tatica, movimento, chute dirigido, passe ACL e disputa ACL |
+| `BolaAgent` | Bola da partida; recebe chutes por ACL e dispara atualizacao fisica no SistemaFutebol |
+
+Configuracao atual (4 instancias de JogadorAgent):
+
+| Nome | Time | Papel | golX | Posicao inicial |
+| --- | --- | --- | --- | --- |
+| atacante-1 | AZUL | ATACANTE | 300 | (135, 75) |
+| zagueiro-1 | AZUL | ZAGUEIRO | 300 | (60, 75) |
+| atacante-2 | VERMELHO | ATACANTE | 0 | (165, 75) |
+| zagueiro-2 | VERMELHO | ZAGUEIRO | 0 | (240, 75) |
 
 ### 20.2. Ambiente da simulacao
 
-O ambiente atual e um campo 2D simplificado com largura, altura, gol e bola global definidos em `Ambiente`. Os jogadores possuem posicao `(x, y)`, velocidade, posse e gol alvo.
+O ambiente e um campo 2D de 300×150 unidades. O gol ocupa uma faixa de Y em cada extremidade lateral (y ∈ [~59.88, ~90.12]). A posicao e detectada como gol quando a bola ultrapassa a linha lateral (x<=0 ou x>=300) dentro dessa faixa.
 
 ### 20.3. Percepcoes atuais dos agentes
 
 Cada jogador consegue observar/consultar:
 
-- posicao da bola;
-- proprio estado;
+- posicao e velocidade da bola;
+- proprio estado (posicao, posse, penalidade);
+- configuracao propria (time, papel, golX);
 - estado de posse conhecido pelo `SistemaFutebol`;
 - oponente proximo para disputa;
-- mensagens ACL de disputa.
-
-Percepcoes planejadas:
-
-- companheiro livre/marcado;
-- adversario em zona de perigo;
-- pedidos de passe;
-- pedidos de cobertura;
-- contexto tatico por time/papel.
+- aliado disponivel para passe (dentro do raio de passe);
+- mensagens ACL de disputa e passe.
 
 ### 20.4. Acoes atuais dos agentes
 
 Cada jogador pode:
 
-- mover;
+- mover para zona tatica (posicionamento);
 - perseguir bola;
 - conduzir bola;
-- chutar;
-- tentar interceptar;
-- iniciar/responder disputa;
+- chutar com direcao ao gol adversario;
+- solicitar passe a aliado (ACL REQUEST);
+- receber e aceitar/recusar passe (ACL AGREE/REFUSE);
+- iniciar/responder disputa por bola (ACL CFP);
 - sofrer penalidade apos perder disputa.
-
-Acoes planejadas:
-
-- passar;
-- pedir passe;
-- cobrir posicao;
-- marcar adversario;
-- ajustar decisao por perfil tatico;
-- goleiro pegar bola com a mao (futuro, nao implementado).
 
 ### 20.5. Comunicacao entre agentes
 
 Hoje existe comunicacao ACL para:
 
-- disputa de bola entre jogadores;
-- chute do jogador para a bola.
-
-No futuro, a colaboracao deve usar mensagens ACL tambem para comunicacao tatica entre companheiros.
+- disputa de bola entre adversarios (CFP/PROPOSE/ACCEPT/REJECT);
+- passe entre aliados (REQUEST/AGREE/REFUSE);
+- chute do jogador para a bola (INFORM).
 
 ### 20.6. Estrategia de decisao
 
 Estado atual:
 
-- decisao por condicionais dentro de `JogadorAgent`.
-
-Direcao planejada:
-
-- ciclo inspirado em OODA;
-- `ContextoDecisao` para orientar a decisao;
-- `ControladorDecisaoJogador` para escolher `TipoDecisao`;
-- `PerfilTatico` para pesos iniciais;
-- probabilidades depois que a arquitetura base estiver estavel.
+- ciclo OODA implementado no tick do `JogadorAgent`;
+- `ContextoDecisao` monta o snapshot situacional;
+- `ControladorDecisaoJogador` escolhe `TipoDecisao`;
+- `PerfilTatico` define pesos por papel (atacante ofensivo, zagueiro defensivo);
+- `SeletorDecisaoPonderada` sorteia a acao com base nos pesos.
 
 ### 20.7. Partes sensiveis da simulacao
 
 Nao alterar sem cuidado:
 
-- ciclo de `TickerBehaviour` do jogador;
-- ciclo de `TickerBehaviour` da bola;
-- protocolo ACL da disputa;
-- posse da bola;
-- atualizacao de estado no `SistemaFutebol`;
-- formato de payload usado pelo frontend.
+- ciclo de `TickerBehaviour` do jogador e da bola;
+- protocolo ACL da disputa (CFP com PEDRA/PAPEL/TESOURA);
+- protocolo ACL do passe (REQUEST/AGREE/REFUSE);
+- posse da bola e sincronizacao com `SistemaFutebol`;
+- formato de payload usado pelo frontend (alterar exige atualizar `normalizers.ts`);
+- constantes de distancia calibradas para campo 300x150.

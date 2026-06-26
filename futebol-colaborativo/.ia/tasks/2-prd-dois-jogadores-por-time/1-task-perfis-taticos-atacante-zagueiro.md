@@ -1,8 +1,8 @@
-# Task 1: Criar Perfis Taticos de Atacante e Zagueiro
+﻿# Task 1: Criar Perfis Taticos de Atacante e Zagueiro
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

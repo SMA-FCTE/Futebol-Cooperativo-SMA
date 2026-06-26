@@ -1,8 +1,8 @@
-# Task 6: Criar ContextoDecisao e ControladorDecisaoJogador
+﻿# Task 6: Criar ContextoDecisao e ControladorDecisaoJogador
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 

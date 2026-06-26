@@ -1,8 +1,8 @@
-# Task 10: Corrigir Inicio de Disputa Sem Posse de Bola
+﻿# Task 10: Corrigir Inicio de Disputa Sem Posse de Bola
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Problema
 

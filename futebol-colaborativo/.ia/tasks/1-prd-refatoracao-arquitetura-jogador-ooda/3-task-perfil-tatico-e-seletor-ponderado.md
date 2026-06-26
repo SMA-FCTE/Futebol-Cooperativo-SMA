@@ -1,8 +1,8 @@
-# Task 5: Criar PerfilTatico e SeletorDecisaoPonderada
+﻿# Task 5: Criar PerfilTatico e SeletorDecisaoPonderada
 
 > **Status:** completed
-> **PRD:** `1-prd.md`
-> **TechSpec:** `2-techspec.md`
+> **PRD:** `prd.md`
+> **TechSpec:** `techspec.md`
 
 ## Objetivo
 
