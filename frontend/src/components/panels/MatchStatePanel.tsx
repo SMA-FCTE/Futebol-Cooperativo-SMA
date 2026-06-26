@@ -1,14 +1,14 @@
 import { findBallCarrier } from '../../game/model/gameState'
 import { formatPassRefusalReason, formatPassStatus } from '../../game/model/passDisplay'
-import type { GameState, PlayerState } from '../../game/model/gameTypes'
+import type { GameState, PlayerState, TeamId } from '../../game/model/gameTypes'
 
 type MatchStatePanelProps = {
   state: GameState
 }
 
 function MatchStatePanel({ state }: MatchStatePanelProps) {
-  const vermelho = state.players.find((player) => player.id === 'vermelho') ?? null
-  const azul = state.players.find((player) => player.id === 'azul') ?? null
+  const vermelho = findRepresentativePlayer(state.players, 'VERMELHO')
+  const azul = findRepresentativePlayer(state.players, 'AZUL')
   const carrier = findBallCarrier(state.players)
   const disputa = state.disputa
   const passe = state.passe
@@ -59,6 +59,17 @@ function MatchStatePanel({ state }: MatchStatePanelProps) {
         />
       </article>
     </div>
+  )
+}
+
+function findRepresentativePlayer(players: PlayerState[], team: TeamId): PlayerState | null {
+  const teamPlayers = players.filter((player) => player.team === team)
+
+  return (
+    teamPlayers.find((player) => player.comBola) ??
+    teamPlayers.find((player) => player.id.toLowerCase().includes('atacante')) ??
+    teamPlayers[0] ??
+    null
   )
 }
 

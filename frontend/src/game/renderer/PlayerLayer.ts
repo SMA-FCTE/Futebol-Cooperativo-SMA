@@ -70,7 +70,7 @@ export class PlayerLayer {
     node.container.position.set(position.x, position.y)
     node.label.text = player.comBola ? `${player.id} *` : player.id
     node.label.position.set(0, radius + 4)
-    node.label.visible = viewport.scale >= 5.25
+    node.label.visible = viewport.scale >= 2.75
 
     node.body.clear()
 
