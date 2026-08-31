@@ -77,18 +77,38 @@ function App() {
   }, [])
 
   async function handleIniciarPartida(duracaoSegundos: number) {
+    console.log('[partida] iniciando com duracaoSegundos=', duracaoSegundos)
     setMatchActionLoading(true)
     try {
-      await gameApi.iniciarPartida(duracaoSegundos)
+      const result = await gameApi.iniciarPartida(duracaoSegundos)
+      console.log('[partida] iniciar ok', result)
+    } catch (err) {
+      console.error('[partida] erro ao iniciar', err)
+    } finally {
+      setMatchActionLoading(false)
+    }
+  }
+
+  async function handleEncerrarPartida() {
+    setMatchActionLoading(true)
+    try {
+      await gameApi.encerrarPartida()
+      console.log('[partida] encerrar ok')
+    } catch (err) {
+      console.error('[partida] erro ao encerrar', err)
     } finally {
       setMatchActionLoading(false)
     }
   }
 
   async function handleReiniciarPartida() {
+    console.log('[partida] reiniciando')
     setMatchActionLoading(true)
     try {
-      await gameApi.reiniciarPartida()
+      const result = await gameApi.reiniciarPartida()
+      console.log('[partida] reiniciar ok', result)
+    } catch (err) {
+      console.error('[partida] erro ao reiniciar', err)
     } finally {
       setMatchActionLoading(false)
     }
@@ -119,13 +139,15 @@ function App() {
             </div>
           </div>
 
-          <div className="match-score">
-            <span className="match-score-team match-score-azul">Azul</span>
-            <strong className="match-score-value">
-              {gameState.scoreboard.A} &times; {gameState.scoreboard.B}
-            </strong>
-            <span className="match-score-team match-score-vermelho">Vermelho</span>
-          </div>
+          {gameState.partida?.estado !== 'ENCERRADA' && (
+            <div className="match-score">
+              <span className="match-score-team match-score-azul">Azul</span>
+              <strong className="match-score-value">
+                {gameState.scoreboard.A} &times; {gameState.scoreboard.B}
+              </strong>
+              <span className="match-score-team match-score-vermelho">Vermelho</span>
+            </div>
+          )}
 
           {gameState.partida?.estado === 'AGUARDANDO' && (
             <MatchControlPanel
@@ -135,8 +157,18 @@ function App() {
           )}
 
           {gameState.partida?.estado === 'EM_ANDAMENTO' && (
-            <div className="match-timer">
-              {formatMatchTime(gameState.partida.tempoRestanteSegundos)}
+            <div className="match-timer-row">
+              <div className="match-timer">
+                {formatMatchTime(gameState.partida.tempoRestanteSegundos)}
+              </div>
+              <button
+                className="btn btn--danger"
+                type="button"
+                onClick={handleEncerrarPartida}
+                disabled={matchActionLoading}
+              >
+                {matchActionLoading ? 'Encerrando…' : 'Encerrar Partida'}
+              </button>
             </div>
           )}
 

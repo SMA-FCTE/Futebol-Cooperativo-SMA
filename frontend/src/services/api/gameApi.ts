@@ -28,6 +28,12 @@ export const gameApi = {
       body: JSON.stringify({ duracaoSegundos }),
     })
   },
+  encerrarPartida(init?: RequestInit) {
+    return request<{ ok: boolean }>('/api/partida/encerrar', {
+      ...init,
+      method: 'POST',
+    })
+  },
   reiniciarPartida(init?: RequestInit) {
     return request<{ ok: boolean }>('/api/partida/reiniciar', {
       ...init,

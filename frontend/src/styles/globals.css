@@ -534,6 +534,23 @@ h3 {
   cursor: not-allowed;
 }
 
+.btn--danger {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.1);
+  color: rgba(255, 200, 200, 0.9);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.22);
+}
+
+.match-timer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
 .match-timer {
   text-align: center;
   font-family: Georgia, 'Times New Roman', serif;
