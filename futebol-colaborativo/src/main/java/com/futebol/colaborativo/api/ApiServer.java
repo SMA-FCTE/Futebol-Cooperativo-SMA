@@ -23,8 +23,8 @@ public class ApiServer {
         });
 
         // Preflight CORS para requisições POST vindas do browser
+        // Access-Control-Allow-Origin já é adicionado pelo filtro before() acima
         options("/*", (req, res) -> {
-            res.header("Access-Control-Allow-Origin", "*");
             res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
             res.header("Access-Control-Allow-Headers", "Content-Type");
             return "";
@@ -54,6 +54,11 @@ public class ApiServer {
                 res.status(400);
                 return gson.toJson(Map.of("erro", "Requisicao invalida"));
             }
+        });
+
+        post("/api/partida/encerrar", (req, res) -> {
+            sistema.encerrarPartida();
+            return gson.toJson(Map.of("ok", true));
         });
 
         post("/api/partida/reiniciar", (req, res) -> {

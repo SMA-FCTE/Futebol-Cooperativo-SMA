@@ -45,15 +45,33 @@ public class SistemaFutebol {
     private int tempoRestanteSegundos = 0;
     private final ScheduledExecutorService timerService = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> timerTask = null;
+    private final ScheduledExecutorService heartbeatService = Executors.newSingleThreadScheduledExecutor();
 
     private static final Gson gson = new Gson();
 
     public SistemaFutebol(AgentContainer container) {
         this.container = container;
+        heartbeatService.scheduleAtFixedRate(() -> {
+            synchronized (SistemaFutebol.this) {
+                if (estadoPartida != EstadoPartida.EM_ANDAMENTO) {
+                    enviarEstadoAtualParaClientes();
+                }
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     public synchronized boolean isEmAndamento() {
         return estadoPartida == EstadoPartida.EM_ANDAMENTO;
+    }
+
+    public synchronized void encerrarPartida() {
+        if (estadoPartida != EstadoPartida.EM_ANDAMENTO) return;
+        if (timerTask != null) {
+            timerTask.cancel(false);
+            timerTask = null;
+        }
+        estadoPartida = EstadoPartida.ENCERRADA;
+        enviarEstadoAtualParaClientes();
     }
 
     public synchronized void iniciarPartida(int duracaoSegundos) {

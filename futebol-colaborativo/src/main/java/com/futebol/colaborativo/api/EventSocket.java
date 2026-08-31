@@ -14,6 +14,8 @@ public class EventSocket extends WebSocketServer {
     private static final Set<WebSocket> connections =
         Collections.synchronizedSet(new HashSet<>());
 
+    private static volatile String lastMessage = null;
+
     public EventSocket(int port) {
         super(new InetSocketAddress(port));
     }
@@ -21,6 +23,9 @@ public class EventSocket extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         connections.add(conn);
+        if (lastMessage != null) {
+            conn.send(lastMessage);
+        }
         System.out.println("✅ WebSocket conectado: " + conn.getRemoteSocketAddress());
     }
 
@@ -46,6 +51,7 @@ public class EventSocket extends WebSocketServer {
     }
 
     public static void enviarMensagemParaClientes(String message) {
+        lastMessage = message;
         synchronized (connections) {
             for (WebSocket conn : connections) {
                 conn.send(message);
