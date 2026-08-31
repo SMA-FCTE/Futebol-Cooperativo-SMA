@@ -27,7 +27,7 @@ public class SistemaFutebol {
     private static final double ATRITO_BOLA = 0.985;
     private static final double VELOCIDADE_MINIMA_BOLA = 0.02;
     private static final double RESTITUICAO_BORDA = 0.82;
-    private static final double RAIO_PASSE = 100.0;
+    private static final double RAIO_PASSE = 150.0;
 
     private final AgentContainer container;
 

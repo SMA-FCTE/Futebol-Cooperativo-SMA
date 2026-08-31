@@ -113,10 +113,26 @@ class SistemaFutebolTest {
     }
 
     @Test
+    void aceitaAliadoEmPasseLongoQuandoAindaEstaDentroDoRaioAmpliado() {
+        SistemaFutebol sistema = new SistemaFutebol(null);
+        JogadorEstado passador = criarEstado("zagueiro-1", 71.78023339539845, 84.35991580061167, 300.0, Time.AZUL);
+        JogadorEstado aliado = criarEstado("atacante-1", 195.0, 75.0, 300.0, Time.AZUL);
+        sistema.getEstados().put(passador.nome, passador);
+        sistema.getEstados().put(aliado.nome, aliado);
+
+        Optional<String> resultado = sistema.localizarAliadoEmPosicaoDePasse(
+                passador.nome, passador, Time.AZUL);
+
+        assertEquals(Optional.of("atacante-1"), resultado);
+        assertNull(sistema.identificarMotivoReceptorPasse(
+                passador.nome, passador, Time.AZUL, aliado.nome));
+    }
+
+    @Test
     void ignoraAliadoForaDoRaioDePasse() {
         SistemaFutebol sistema = new SistemaFutebol(null);
         JogadorEstado passador = criarEstado("zagueiro", 60, 75, Ambiente.largura, Time.AZUL);
-        JogadorEstado aliado = criarEstado("atacante", 165, 75, Ambiente.largura, Time.AZUL);
+        JogadorEstado aliado = criarEstado("atacante", 220, 75, Ambiente.largura, Time.AZUL);
         sistema.getEstados().put(passador.nome, passador);
         sistema.getEstados().put(aliado.nome, aliado);
 
