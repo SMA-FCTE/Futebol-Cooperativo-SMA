@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import GameViewport from '../components/game/GameViewport'
 import DebugPanel from '../components/panels/DebugPanel'
@@ -9,72 +9,12 @@ import Scoreboard from '../components/panels/Scoreboard'
 import { env } from '../config/env'
 import { findBallCarrier } from '../game/model/gameState'
 import { useGameWebSocket } from '../hooks/useGameWebSocket'
-import { gameApi, type BackendPlayersResponse } from '../services/api/gameApi'
-
-type HttpBootstrapState = {
-  status: string | null
-  players: BackendPlayersResponse | null
-  error: string | null
-}
-
-const initialHttpState: HttpBootstrapState = {
-  status: null,
-  players: null,
-  error: null,
-}
+import { gameApi } from '../services/api/gameApi'
 
 function App() {
   const { gameState, connectionStatus, lastRawMessage, events } = useGameWebSocket(env.wsUrl)
-  const [httpState, setHttpState] = useState(initialHttpState)
   const [matchActionLoading, setMatchActionLoading] = useState(false)
   const ballCarrier = findBallCarrier(gameState.players)
-
-  useEffect(() => {
-    const abortController = new AbortController()
-    let isActive = true
-
-    async function bootstrapFromHttp() {
-      try {
-        const [status, players] = await Promise.all([
-          gameApi.getStatus({ signal: abortController.signal }),
-          gameApi.getPlayers({ signal: abortController.signal }),
-        ])
-
-        if (!isActive) {
-          return
-        }
-
-        startTransition(() => {
-          setHttpState({
-            status,
-            players,
-            error: null,
-          })
-        })
-      } catch (error) {
-        if (!isActive || abortController.signal.aborted) {
-          return
-        }
-
-        startTransition(() => {
-          setHttpState((currentState) => ({
-            ...currentState,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'Falha ao buscar bootstrap HTTP do backend.',
-          }))
-        })
-      }
-    }
-
-    void bootstrapFromHttp()
-
-    return () => {
-      isActive = false
-      abortController.abort()
-    }
-  }, [])
 
   async function handleIniciarPartida(duracaoSegundos: number) {
     console.log('[partida] iniciando com duracaoSegundos=', duracaoSegundos)
@@ -198,9 +138,6 @@ function App() {
             gameState={gameState}
             lastRawMessage={lastRawMessage}
             events={events}
-            httpStatus={httpState.status}
-            httpPlayersCount={httpState.players ? Object.keys(httpState.players).length : null}
-            httpError={httpState.error}
             wsUrl={env.wsUrl}
             apiUrl={env.apiUrl}
           />

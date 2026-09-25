@@ -9,9 +9,6 @@ type DebugPanelProps = {
   gameState: GameState
   lastRawMessage: string | null
   events: GameEvent[]
-  httpStatus: string | null
-  httpPlayersCount: number | null
-  httpError: string | null
   wsUrl: string
   apiUrl: string
 }
@@ -21,9 +18,6 @@ function DebugPanel({
   gameState,
   lastRawMessage,
   events,
-  httpStatus,
-  httpPlayersCount,
-  httpError,
   wsUrl,
   apiUrl,
 }: DebugPanelProps) {
@@ -160,26 +154,6 @@ function DebugPanel({
           <li>
             <span>Resultado</span>
             <strong>{passe?.resultado ?? 'Aguardando passe'}</strong>
-          </li>
-        </ul>
-      </div>
-
-      <div className="debug-block">
-        <h3>Inicialização por HTTP</h3>
-        <ul className="debug-list">
-          <li>
-            <span>/api/status</span>
-            <strong>{httpStatus ?? 'Aguardando resposta'}</strong>
-          </li>
-          <li>
-            <span>/api/jogadores</span>
-            <strong>
-              {httpPlayersCount === null ? 'Aguardando resposta' : `${httpPlayersCount} registros`}
-            </strong>
-          </li>
-          <li>
-            <span>Erro HTTP</span>
-            <strong>{httpError ?? 'Nenhum'}</strong>
           </li>
         </ul>
       </div>
